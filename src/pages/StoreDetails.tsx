@@ -18,7 +18,6 @@ import {
   Compass,
   Globe,
   ExternalLink,
-  CheckCircle2,
   MessageCircle,
   Map
 } from 'lucide-react';
@@ -274,33 +273,31 @@ const StoreDetails: React.FC = () => {
   if (!store) return <div>Store not found</div>;
 
   return (
-    <div className="store-details-page-container">
-      
-      {/* Sticky Header (Parity) */}
-      <header className="store-details-header">
+    <div className="detail-page-container">
+      <header className="detail-header">
         <div className="store-details-back-container">
-          <button onClick={() => navigate('/stores')} className="store-details-back-btn">
-            <ArrowLeft size={24} />
+          <button onClick={() => navigate(-1)} className="detail-back-btn">
+            <ArrowLeft size={24} /> 
+            <h1 className="store-details-page-title">Store Details</h1>
           </button>
-          <h1 className="store-details-page-title">Store</h1>
         </div>
 
-        <div className="store-details-actions-container">
+        <div className="detail-actions">
+          {store.has_pending_changes && (
+            <button 
+              onClick={handleVerifyChanges}
+              className="detail-action-btn success"
+            >
+              <ClipboardCheck size={16} /> Verify Changes
+            </button>
+          )}
+
           {store.is_active ? (
             <>
-              {store.has_pending_changes && (
-                <button 
-                  onClick={handleVerifyChanges}
-                  disabled={actionLoading}
-                  className="store-details-action-btn verify"
-                >
-                  <CheckCircle2 size={16} /> Verify
-                </button>
-              )}
               <button 
                 onClick={() => handleStatusUpdate('deactivate')}
                 disabled={actionLoading}
-                className="store-details-action-btn deactivate"
+                className="detail-action-btn danger"
               >
                 <XCircle size={16} /> Deactivate
               </button>
@@ -309,7 +306,7 @@ const StoreDetails: React.FC = () => {
             <button 
               onClick={() => handleStatusUpdate('activate')}
               disabled={actionLoading}
-              className="store-details-action-btn activate"
+              className="detail-action-btn primary"
             >
               {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />} 
               Activate
@@ -556,20 +553,20 @@ const StoreDetails: React.FC = () => {
       {/* Verification Changes Modal (Parity) */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="store-details-modal-overlay">
+          <div className="modal-overlay">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} 
-              className="card store-details-modal-content"
+              className="modal-content"
             >
-               <div className="store-details-modal-header">
-                  <div className="store-details-modal-title-wrapper">
+               <div className="modal-header">
+                  <h2 className="modal-title">
                     <ClipboardCheck size={24} color="#007bff" />
-                    <h2 className="store-details-modal-title">Review Changes</h2>
-                  </div>
-                  <button onClick={() => setIsModalOpen(false)} className="store-details-modal-close-btn"><XCircle size={24} color="#8E8E93" /></button>
+                    Review Changes
+                  </h2>
+                  <button onClick={() => setIsModalOpen(false)} className="modal-close-btn"><XCircle size={24} color="#8E8E93" /></button>
                </div>
                
-               <div className="store-details-modal-body">
+               <div className="modal-body">
                   <p className="store-details-modal-subtitle">
                     The following details have been updated by the owner. Please review before accepting.
                   </p>
@@ -588,9 +585,9 @@ const StoreDetails: React.FC = () => {
                   </div>
                </div>
 
-               <div className="store-details-modal-footer">
+               <div className="modal-footer">
                   <button className="btn" style={{ flex: 1, background: '#E5E5EA', color: '#8E8E93' }} onClick={() => setIsModalOpen(false)}>Cancel</button>
-                  <button className="btn" style={{ flex: 1, background: '#007bff', color: 'white' }} onClick={confirmVerification} disabled={actionLoading}>
+                  <button className="btn btn-primary" style={{ flex: 1 }} onClick={confirmVerification} disabled={actionLoading}>
                     {actionLoading ? <Loader2 className="animate-spin" size={18} /> : <span>Accept Changes</span>}
                   </button>
                </div>

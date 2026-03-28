@@ -151,23 +151,30 @@ const Images: React.FC = () => {
   };
 
   return (
-    <div className="images-page-container">
-      
-      {/* Pill Tab Bar (Parity) */}
-      <div className="images-tab-bar">
-        <button 
-          onClick={() => setActiveTab('banners')}
-          className={`images-tab-btn ${activeTab === 'banners' ? 'active' : ''}`}
-        >
-          Banners
-        </button>
-        <button 
-          onClick={() => setActiveTab('categories')}
-          className={`images-tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
-        >
-          Categories
-        </button>
-      </div>
+    <div className="page-container">
+      <header className="page-header">
+        <div className="page-header-top">
+          <div>
+            <h1 className="page-title">Images</h1>
+            <p className="page-subtitle">Manage promotional banners and category icons</p>
+          </div>
+        </div>
+
+        <div className="pill-tab-group">
+          <button 
+            onClick={() => setActiveTab('banners')}
+            className={`pill-tab ${activeTab === 'banners' ? 'active' : ''}`}
+          >
+            Banners
+          </button>
+          <button 
+            onClick={() => setActiveTab('categories')}
+            className={`pill-tab ${activeTab === 'categories' ? 'active' : ''}`}
+          >
+            Categories
+          </button>
+        </div>
+      </header>
 
       <main className="images-main-content">
         {loading ? (

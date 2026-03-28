@@ -111,16 +111,16 @@ const Products: React.FC = () => {
   };
 
   return (
-    <div className="products-page-container">
-      <header className="products-header">
-        <div className="products-header-top">
+    <div className="page-container">
+      <header className="page-header">
+        <div className="page-header-top">
           <div>
-            <h1 className="products-title">Products</h1>
-            <p className="products-subtitle">Manage catalog across all store types</p>
+            <h1 className="page-title">Products</h1>
+            <p className="page-subtitle">Manage catalog across all store types</p>
           </div>
         </div>
 
-        {/* Parity Tab Bar */}
+        {/* Main Tabs (Desktop Bar Style) */}
         <div className="tab-bar">
           {(['barcode', 'common', 'personal'] as const).map((tab) => (
             <button 
@@ -135,11 +135,11 @@ const Products: React.FC = () => {
 
         {/* Conditional Sub-Tabs */}
         {activeTab === 'barcode' && (
-          <div className="sub-tab-bar">
+          <div className="pill-tab-group">
             {(['all', 'uncomplete', 'needs_changes'] as const).map((filter) => (
               <button 
                 key={filter}
-                className={`sub-tab-btn ${barcodeFilter === filter ? 'active' : ''}`}
+                className={`pill-tab ${barcodeFilter === filter ? 'active' : ''}`}
                 onClick={() => setBarcodeFilter(filter)}
               >
                 {filter === 'uncomplete' ? 'Uncomplete Info' : 
@@ -150,11 +150,11 @@ const Products: React.FC = () => {
         )}
 
         {activeTab === 'common' && (
-          <div className="sub-tab-bar">
+          <div className="pill-tab-group">
             {(['all', 'no_image'] as const).map((filter) => (
               <button 
                 key={filter}
-                className={`sub-tab-btn ${commonFilter === filter ? 'active' : ''}`}
+                className={`pill-tab ${commonFilter === filter ? 'active' : ''}`}
                 onClick={() => setCommonFilter(filter)}
               >
                 {filter === 'no_image' ? 'Require Image' : 'All'}
@@ -178,7 +178,7 @@ const Products: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 key={product.id} 
-                className="card product-card product-card-wrapper"
+                className="card product-card"
                 onClick={() => navigate(`/products/${product.id}`)}
               >
                 <div className="product-image-container">
@@ -211,32 +211,32 @@ const Products: React.FC = () => {
                   )}
                 </div>
 
-                <div className="product-info-container">
-                  <div className="product-info-header">
-                    <div className="product-title-section">
-                      <h3 className="product-title">
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '0.5rem 0' }}>
+                  <div className="info-row">
+                    <div style={{ flex: 1, marginRight: '8px' }}>
+                      <h3 className="product-name" style={{ lineHeight: 1.2, marginBottom: '4px' }}>
                         {product.name}
                       </h3>
-                      <p className="product-category">{product.category || 'No Category'}</p>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                         {product.category || 'No Category'}
+                         {product.weight_kg && ` • ${product.weight_kg}kg`}
+                      </p>
                     </div>
-                    <div className="product-price-section">
+                    <div style={{ textAlign: 'right' }}>
                       <p className="product-price">₹{product.price}</p>
-                      {product.weight_kg !== null && (
-                        <p className="product-weight">{product.weight_kg}kg</p>
-                      )}
                     </div>
                   </div>
 
-                  {product.barcode && (
-                    <div className="product-barcode-badge">
-                      <BarcodeIcon size={12} color="#666" />
-                      <span className="product-barcode-text">{product.barcode}</span>
+                  {product.product_type === 'barcode' && product.barcode && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', marginBottom: '8px' }}>
+                      <BarcodeIcon size={14} />
+                      <span style={{ fontWeight: 600 }}>{product.barcode}</span>
                     </div>
                   )}
 
-                  <div className="product-store-row">
-                    <StoreIcon size={14} color="var(--primary)" />
-                    <span className="product-store-text">{product.stores?.name || 'Unknown'}</span>
+                  <div className="store-row">
+                    <StoreIcon size={16} color="var(--primary)" />
+                    <span>{product.stores?.name || 'Unknown'}</span>
                   </div>
                 </div>
               </motion.div>

@@ -1,40 +1,4 @@
-.images-page-container {
-  min-height: 100vh;
-  background: #f2f2f7;
-  padding: 2rem;
-}
 
-.images-tab-bar {
-  background: white;
-  border-radius: 12px;
-  padding: 8px;
-  display: flex;
-  gap: 4px;
-  margin: 0 auto 1.5rem auto;
-  max-width: 600px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.images-tab-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.images-tab-btn.active {
-  background: #007bff;
-  color: white;
-}
-
-.images-tab-btn:not(.active) {
-  background: transparent;
-  color: #666;
-}
 
 .images-main-content {
   max-width: 800px;

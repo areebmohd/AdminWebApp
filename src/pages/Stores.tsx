@@ -87,24 +87,23 @@ const Stores: React.FC = () => {
   }, [activeFilter]);
 
   return (
-    <div className="stores-page" style={{ padding: '2rem' }}>
-      <header className="stores-header">
-        <div className="stores-header-top">
+    <div className="page-container">
+      <header className="page-header">
+        <div className="page-header-top">
           <div>
-            <h1 className="stores-title">Stores</h1>
-            <p className="stores-subtitle">Verify and manage registered business partners</p>
+            <h1 className="page-title">Stores</h1>
+            <p className="page-subtitle">Manage retail partners and their verification status</p>
           </div>
         </div>
 
-        {/* Parity Pill-Tab Bar */}
-        <div className="stores-filter-bar">
-          {(['all', 'unactive', 'unverified'] as const).map((filter) => (
+        <div className="tab-bar">
+          {(['all', 'unactive', 'unverified'] as const).map(filter => (
             <button 
               key={filter}
+              className={`tab-btn ${activeFilter === filter ? 'active' : ''}`}
               onClick={() => setActiveFilter(filter)}
-              className={`stores-filter-btn ${activeFilter === filter ? 'active' : ''}`}
             >
-              {filter}
+              {filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
           ))}
         </div>

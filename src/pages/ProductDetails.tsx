@@ -241,16 +241,16 @@ const ProductDetails: React.FC = () => {
   if (!product) return <div>Product not found</div>;
 
   return (
-    <div className="product-details-page-container">
-      <header className="product-details-header">
-        <button onClick={() => navigate('/products')} className="product-details-back-btn">
+    <div className="detail-page-container">
+      <header className="detail-header">
+        <button onClick={() => navigate('/products')} className="detail-back-btn">
           <ArrowLeft size={20} /> Back
         </button>
 
         {product.product_type === 'barcode' && (
           <button 
             onClick={() => setIsEditing(!isEditing)}
-            className={`product-details-edit-btn ${isEditing ? 'active' : ''}`}
+            className={`detail-action-btn ${isEditing ? 'danger' : 'primary'}`}
           >
             {isEditing ? <XCircle size={18} /> : <Edit2 size={16} />}
             {isEditing ? 'Close' : 'Edit'}
@@ -447,18 +447,19 @@ const ProductDetails: React.FC = () => {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsPickerVisible(false)}
-              className="product-details-modal-overlay"
+              className="modal-overlay"
             />
             <motion.div 
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="product-details-modal-content"
+              className="modal-content"
+              style={{ position: 'fixed', bottom: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
             >
-              <div className="product-details-modal-header">
-                <h3 className="product-details-modal-title">Select Category</h3>
-                <button onClick={() => setIsPickerVisible(false)} className="product-details-modal-close-btn"><X size={24} /></button>
+              <div className="modal-header">
+                <h3 className="modal-title">Select Category</h3>
+                <button onClick={() => setIsPickerVisible(false)} className="modal-close-btn"><X size={24} /></button>
               </div>
-              <div className="product-details-modal-body">
+              <div className="modal-body">
                 {PRODUCT_CATEGORIES.map(cat => (
                   <button 
                     key={cat}
