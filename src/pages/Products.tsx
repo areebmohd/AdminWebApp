@@ -169,14 +169,12 @@ const Products: React.FC = () => {
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
         </div>
       ) : (
-        <div className="grid">
-          <AnimatePresence>
+        <AnimatePresence mode="wait">
+          <div key={activeTab + barcodeFilter + commonFilter} className="grid">
             {products.map((product) => (
               <motion.div 
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 key={product.id} 
                 className="card product-card"
                 onClick={() => navigate(`/products/${product.id}`)}
@@ -211,44 +209,44 @@ const Products: React.FC = () => {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '0.5rem 0' }}>
-                  <div className="info-row">
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                     <div style={{ flex: 1, marginRight: '8px' }}>
-                      <h3 className="product-name" style={{ lineHeight: 1.2, marginBottom: '4px' }}>
+                      <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1c1c1e', lineHeight: 1.2, marginBottom: '4px' }}>
                         {product.name}
                       </h3>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                          {product.category || 'No Category'}
                          {product.weight_kg && ` • ${product.weight_kg}kg`}
                       </p>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p className="product-price">₹{product.price}</p>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--primary)' }}>₹{product.price}</p>
                     </div>
                   </div>
 
                   {product.product_type === 'barcode' && product.barcode && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', marginBottom: '8px' }}>
-                      <BarcodeIcon size={14} />
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)', background: '#f1f5f9', padding: '3px 7px', borderRadius: '4px', marginBottom: '6px', alignSelf: 'flex-start' }}>
+                      <BarcodeIcon size={12} />
                       <span style={{ fontWeight: 600 }}>{product.barcode}</span>
                     </div>
                   )}
 
-                  <div className="store-row">
-                    <StoreIcon size={16} color="var(--primary)" />
-                    <span>{product.stores?.name || 'Unknown'}</span>
+                  <div style={{ marginTop: 'auto', paddingTop: '6px', borderTop: '1px solid #f2f2f7', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <StoreIcon size={13} color="var(--primary)" />
+                    <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 600 }}>{product.stores?.name || 'Unknown'}</span>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </AnimatePresence>
-          {products.length === 0 && (
-            <div className="products-empty">
-              <Package size={64} className="products-empty-icon" />
-              <p className="products-empty-text">No products found</p>
-            </div>
-          )}
-        </div>
+            {products.length === 0 && (
+              <div className="products-empty" style={{ gridColumn: '1 / -1' }}>
+                <Package size={64} className="products-empty-icon" />
+                <p className="products-empty-text">No products found</p>
+              </div>
+            )}
+          </div>
+        </AnimatePresence>
       )}
     </div>
   );

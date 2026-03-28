@@ -160,16 +160,16 @@ const Images: React.FC = () => {
           </div>
         </div>
 
-        <div className="pill-tab-group">
+        <div className="tab-bar">
           <button 
             onClick={() => setActiveTab('banners')}
-            className={`pill-tab ${activeTab === 'banners' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'banners' ? 'active' : ''}`}
           >
             Banners
           </button>
           <button 
             onClick={() => setActiveTab('categories')}
-            className={`pill-tab ${activeTab === 'categories' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
           >
             Categories
           </button>

@@ -114,8 +114,8 @@ const Stores: React.FC = () => {
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
         </div>
       ) : (
-        <div className="stores-list-container">
-          <AnimatePresence>
+        <AnimatePresence mode="wait">
+          <div key={activeFilter} className="stores-list-container">
             {storeSections.map((section) => (
               <div key={section.title}>
                 <h2 className="store-section-title">
@@ -125,9 +125,8 @@ const Stores: React.FC = () => {
                 <div className="store-grid">
                   {section.data.map((store) => (
                     <motion.div 
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       key={store.id} 
                       className="card store-card"
                       onClick={() => navigate(`/stores/${store.id}`)}
@@ -157,11 +156,11 @@ const Stores: React.FC = () => {
                         <div className="store-badges-section">
                           {store.has_pending_changes && (
                             <div className="store-badge unverified">
-                              Unverified Changes
+                              Unverified
                             </div>
                           )}
                           <div className={`store-badge ${store.is_active ? 'active' : 'inactive'}`}>
-                            {store.is_active ? 'Active' : 'Unactive'}
+                            {store.is_active ? 'Active' : 'Inactive'}
                           </div>
                         </div>
                       </div>
@@ -170,15 +169,15 @@ const Stores: React.FC = () => {
                 </div>
               </div>
             ))}
-          </AnimatePresence>
 
-          {storeSections.length === 0 && (
-            <div className="stores-empty">
-              <StoreIcon size={64} className="stores-empty-icon" />
-              <p className="stores-empty-text">No stores found</p>
-            </div>
-          )}
-        </div>
+            {storeSections.length === 0 && (
+              <div className="stores-empty">
+                <StoreIcon size={64} className="stores-empty-icon" />
+                <p className="stores-empty-text">No stores found</p>
+              </div>
+            )}
+          </div>
+        </AnimatePresence>
       )}
     </div>
   );

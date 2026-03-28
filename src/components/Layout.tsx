@@ -21,7 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            style={{ minHeight: '100%', display: 'flex', flexDirection: 'column' }}
+            style={{ minHeight: '100%', width: '100%' }}
           >
             {children}
           </motion.div>

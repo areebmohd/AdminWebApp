@@ -148,12 +148,15 @@ h2 {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
+  align-items: start;
 }
 
 .product-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
 }
 
 .product-image-container {
@@ -272,8 +275,10 @@ h2 {
 /* Page Layout */
 .page-container {
   padding: 2rem;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .page-header {
