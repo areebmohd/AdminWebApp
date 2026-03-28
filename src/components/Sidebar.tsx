@@ -4,9 +4,10 @@ import {
   Package, 
   Store, 
   Image as ImageIcon, 
-  LogOut,
   ChevronRight
 } from 'lucide-react';
+
+import './Sidebar.css';
 
 const Sidebar: React.FC = () => {
   const menuItems = [
@@ -17,13 +18,13 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="sidebar">
-      <div className="branding" style={{ padding: '0 1rem 2rem' }}>
-        <h2 style={{ color: 'var(--primary)', fontWeight: 800, letterSpacing: '-0.5px' }}>
-          DELIVERY<span style={{ color: 'var(--text-main)' }}>ADMIN</span>
+      <div className="sidebar-branding">
+        <h2 className="sidebar-brand-title">
+          DELIVERY<span className="sidebar-brand-text">ADMIN</span>
         </h2>
       </div>
 
-      <nav style={{ flex: 1 }}>
+      <nav className="sidebar-nav">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -32,17 +33,10 @@ const Sidebar: React.FC = () => {
           >
             <item.icon size={20} />
             <span>{item.name}</span>
-            <ChevronRight size={14} className="chevron" style={{ marginLeft: 'auto', opacity: 0.5 }} />
+            <ChevronRight size={14} className="sidebar-chevron" />
           </NavLink>
         ))}
       </nav>
-
-      <div className="sidebar-footer" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-        <button className="nav-link" style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer' }}>
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
     </aside>
   );
 };

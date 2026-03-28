@@ -7,9 +7,10 @@ import {
   Package, 
   Camera,
   Store as StoreIcon,
-  Barcode as BarcodeIcon,
-  Search
+  Barcode as BarcodeIcon
 } from 'lucide-react';
+
+import './Products.css';
 
 interface Product {
   id: string;
@@ -110,12 +111,12 @@ const Products: React.FC = () => {
   };
 
   return (
-    <div className="products-page" style={{ padding: '2rem' }}>
-      <header style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="products-page-container">
+      <header className="products-header">
+        <div className="products-header-top">
           <div>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.25rem' }}>Products</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Manage catalog across all store types</p>
+            <h1 className="products-title">Products</h1>
+            <p className="products-subtitle">Manage catalog across all store types</p>
           </div>
         </div>
 
@@ -164,7 +165,7 @@ const Products: React.FC = () => {
       </header>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem' }}>
+        <div className="products-loader">
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
         </div>
       ) : (
@@ -177,27 +178,21 @@ const Products: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 key={product.id} 
-                className="card product-card"
+                className="card product-card product-card-wrapper"
                 onClick={() => navigate(`/products/${product.id}`)}
-                style={{ cursor: 'pointer', position: 'relative', display: 'flex', flexDirection: 'column' }}
               >
-                <div className="product-image-container" style={{ marginBottom: '0.75rem' }}>
+                <div className="product-image-container">
                   {product.image_url ? (
                     <img src={product.image_url} alt={product.name} className="product-image" />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+                    <div className="product-image-placeholder">
                       <Package size={40} />
                     </div>
                   )}
 
                   {activeTab !== 'personal' && (
                     <label 
-                      style={{ 
-                        position: 'absolute', bottom: '8px', right: '8px', 
-                        background: 'rgba(0,0,0,0.6)', width: '32px', height: '32px', 
-                        borderRadius: '16px', display: 'flex', alignItems: 'center', 
-                        justifyContent: 'center', cursor: 'pointer' 
-                      }}
+                      className="product-upload-label"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <input 
@@ -216,41 +211,41 @@ const Products: React.FC = () => {
                   )}
                 </div>
 
-                <div style={{ padding: '0.25rem 0.5rem 0.75rem 0.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                    <div style={{ flex: 1, marginRight: '8px' }}>
-                      <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: '#1C1C1E', lineHeight: 1.3, marginBottom: '2px' }}>
+                <div className="product-info-container">
+                  <div className="product-info-header">
+                    <div className="product-title-section">
+                      <h3 className="product-title">
                         {product.name}
                       </h3>
-                      <p style={{ fontSize: '0.75rem', color: '#8E8E93' }}>{product.category || 'No Category'}</p>
+                      <p className="product-category">{product.category || 'No Category'}</p>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--primary)' }}>₹{product.price}</p>
+                    <div className="product-price-section">
+                      <p className="product-price">₹{product.price}</p>
                       {product.weight_kg !== null && (
-                        <p style={{ fontSize: '0.75rem', color: '#8E8E93', fontWeight: 600 }}>{product.weight_kg}kg</p>
+                        <p className="product-weight">{product.weight_kg}kg</p>
                       )}
                     </div>
                   </div>
 
                   {product.barcode && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#F2F2F7', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginBottom: '8px', marginTop: '4px' }}>
+                    <div className="product-barcode-badge">
                       <BarcodeIcon size={12} color="#666" />
-                      <span style={{ fontSize: '0.625rem', color: '#666', fontWeight: 600 }}>{product.barcode}</span>
+                      <span className="product-barcode-text">{product.barcode}</span>
                     </div>
                   )}
 
-                  <div className="store-row" style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid #F2F2F7', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div className="product-store-row">
                     <StoreIcon size={14} color="var(--primary)" />
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--primary)', fontWeight: 600 }}>{product.stores?.name || 'Unknown'}</span>
+                    <span className="product-store-text">{product.stores?.name || 'Unknown'}</span>
                   </div>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
           {products.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6rem 0', color: '#ccc' }}>
-              <Search size={48} style={{ marginBottom: '1rem' }} />
-              <p style={{ fontSize: '1rem', fontWeight: 500, color: '#8E8E93' }}>No {activeTab} products found</p>
+            <div className="products-empty">
+              <Package size={64} className="products-empty-icon" />
+              <p className="products-empty-text">No products found</p>
             </div>
           )}
         </div>

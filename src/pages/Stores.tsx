@@ -8,6 +8,8 @@ import {
   Loader2,
 } from 'lucide-react';
 
+import './Stores.css';
+
 interface Store {
   id: string;
   name: string;
@@ -86,29 +88,21 @@ const Stores: React.FC = () => {
 
   return (
     <div className="stores-page" style={{ padding: '2rem' }}>
-      <header style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <header className="stores-header">
+        <div className="stores-header-top">
           <div>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.25rem' }}>Stores</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Verify and manage registered business partners</p>
+            <h1 className="stores-title">Stores</h1>
+            <p className="stores-subtitle">Verify and manage registered business partners</p>
           </div>
         </div>
 
         {/* Parity Pill-Tab Bar */}
-        <div style={{ display: 'flex', gap: '0.625rem', padding: '0.75rem 0' }}>
+        <div className="stores-filter-bar">
           {(['all', 'unactive', 'unverified'] as const).map((filter) => (
             <button 
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              style={{ 
-                padding: '0.5rem 1.125rem', borderRadius: '25px', fontSize: '13px', 
-                fontWeight: 700, border: '1px solid var(--border)', cursor: 'pointer',
-                background: activeFilter === filter ? 'var(--primary)' : 'white',
-                color: activeFilter === filter ? 'white' : 'var(--text-secondary)',
-                boxShadow: activeFilter === filter ? '0 4px 6px -1px var(--primary)' : 'none',
-                transition: 'all 0.2s',
-                textTransform: 'capitalize'
-              }}
+              className={`stores-filter-btn ${activeFilter === filter ? 'active' : ''}`}
             >
               {filter}
             </button>
@@ -117,65 +111,57 @@ const Stores: React.FC = () => {
       </header>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '6rem' }}>
+        <div className="stores-loader">
           <Loader2 className="animate-spin" size={48} color="var(--primary)" />
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="stores-list-container">
           <AnimatePresence>
             {storeSections.map((section) => (
               <div key={section.title}>
-                <h2 style={{ fontSize: '0.9375rem', fontWeight: 'bold', color: '#8E8E93', marginBottom: '1rem', paddingLeft: '0.25rem' }}>
+                <h2 className="store-section-title">
                   {section.title}
                 </h2>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                <div className="store-grid">
                   {section.data.map((store) => (
                     <motion.div 
                       layout
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       key={store.id} 
-                      className="card"
+                      className="card store-card"
                       onClick={() => navigate(`/stores/${store.id}`)}
-                      style={{ 
-                        padding: 0, overflow: 'hidden', cursor: 'pointer',
-                        display: 'flex', flexDirection: 'column'
-                      }}
                     >
                       {/* Banner Image */}
-                      <div style={{ height: '120px', background: '#E5E5EA' }}>
+                      <div className="store-banner-container">
                         {store.banner_url ? (
-                          <img src={store.banner_url} alt={store.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={store.banner_url} alt={store.name} className="store-banner-img" />
                         ) : (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+                          <div className="store-banner-placeholder">
                             <ImageIcon size={40} />
                           </div>
                         )}
                       </div>
 
                       {/* Store Card Body */}
-                      <div style={{ padding: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                        <div style={{ flex: 1, paddingRight: '0.5rem' }}>
-                          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#1C1C1E', marginBottom: '2px' }}>{store.name}</h3>
+                      <div className="store-card-body">
+                        <div className="store-info-section">
+                          <h3 className="store-name">{store.name}</h3>
                           {store.address && (
-                            <p style={{ fontSize: '0.75rem', color: '#8E8E93', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            <p className="store-address">
                               {store.address}
                             </p>
                           )}
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <div className="store-badges-section">
                           {store.has_pending_changes && (
-                            <div style={{ background: '#FF3B30', color: 'white', padding: '4px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 800 }}>
+                            <div className="store-badge unverified">
                               Unverified Changes
                             </div>
                           )}
-                          <div style={{ 
-                            background: store.is_active ? '#34C759' : '#FF9500', 
-                            color: 'white', padding: '4px 8px', borderRadius: '12px', 
-                            fontSize: '10px', fontWeight: 800 
-                          }}>
+                          <div className={`store-badge ${store.is_active ? 'active' : 'inactive'}`}>
                             {store.is_active ? 'Active' : 'Unactive'}
                           </div>
                         </div>
@@ -188,9 +174,9 @@ const Stores: React.FC = () => {
           </AnimatePresence>
 
           {storeSections.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '6rem 0', color: '#ccc' }}>
-              <StoreIcon size={64} style={{ marginBottom: '1.5rem' }} />
-              <p style={{ fontSize: '1.125rem', fontWeight: 500, color: '#8E8E93' }}>No stores found</p>
+            <div className="stores-empty">
+              <StoreIcon size={64} className="stores-empty-icon" />
+              <p className="stores-empty-text">No stores found</p>
             </div>
           )}
         </div>

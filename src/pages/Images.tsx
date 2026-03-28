@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Image as ImageIcon, 
   Loader2, 
@@ -9,6 +9,8 @@ import {
   Camera, 
   Pencil
 } from 'lucide-react';
+
+import './Images.css';
 
 const PRODUCT_CATEGORIES = [
   'Clothing',
@@ -149,73 +151,54 @@ const Images: React.FC = () => {
   };
 
   return (
-    <div className="images-page" style={{ minHeight: '100vh', background: '#F2F2F7', padding: '2rem' }}>
+    <div className="images-page-container">
       
       {/* Pill Tab Bar (Parity) */}
-      <div style={{ 
-        background: 'white', borderRadius: '12px', padding: '8px', 
-        display: 'flex', gap: '4px', margin: '0 auto 1.5rem auto', maxWidth: '600px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-      }}>
+      <div className="images-tab-bar">
         <button 
           onClick={() => setActiveTab('banners')}
-          style={{ 
-            flex: 1, padding: '10px', borderRadius: '8px', border: 'none', fontSize: '14px', fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.2s',
-            background: activeTab === 'banners' ? '#007bff' : 'transparent',
-            color: activeTab === 'banners' ? 'white' : '#666'
-          }}
+          className={`images-tab-btn ${activeTab === 'banners' ? 'active' : ''}`}
         >
           Banners
         </button>
         <button 
           onClick={() => setActiveTab('categories')}
-          style={{ 
-            flex: 1, padding: '10px', borderRadius: '8px', border: 'none', fontSize: '14px', fontWeight: 600,
-            cursor: 'pointer', transition: 'all 0.2s',
-            background: activeTab === 'categories' ? '#007bff' : 'transparent',
-            color: activeTab === 'categories' ? 'white' : '#666'
-          }}
+          className={`images-tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
         >
           Categories
         </button>
       </div>
 
-      <main style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <main className="images-main-content">
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}>
+          <div className="images-loader">
             <Loader2 className="animate-spin" size={48} color="#007bff" />
           </div>
         ) : activeTab === 'banners' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+          <div className="images-banners-list">
              {/* Add New Banner (Dashed Placeholder) */}
-             <label style={{ 
-               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-               background: 'white', border: '1px dashed #007bff',
-               borderRadius: '12px', cursor: 'pointer', color: '#007bff', fontWeight: 600,
-               width: 'fit-content', padding: '12px 24px', margin: '0 auto'
-             }}>
+             <label className="images-banner-add-btn">
                 <input type="file" accept="image/*" onChange={(e) => handlePickImage('new', 'banner', e)} style={{ display: 'none' }} />
                 <PlusCircle size={24} /> Add New Banner
              </label>
              
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+             <div className="images-banner-list-inner">
                 {banners.map(banner => (
                   <motion.div 
                     layout key={banner.id} 
-                    style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    className="images-banner-card"
                   >
-                     <div style={{ width: '100%', aspectRatio: '16/9', background: '#E5E5EA' }}>
-                        <img src={banner.image_url} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                     <div className="images-banner-img-container">
+                        <img src={banner.image_url} alt="Banner" className="images-banner-img" />
                      </div>
-                     <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px', borderTop: '1px solid #F2F2F7', gap: '1rem' }}>
-                        <label style={{ padding: '8px', cursor: 'pointer', color: '#007bff' }}>
+                     <div className="images-banner-actions">
+                        <label className="images-banner-action-btn">
                           <input type="file" accept="image/*" onChange={(e) => handlePickImage(banner.id, 'banner', e)} style={{ display: 'none' }} />
                           {uploading === banner.id ? <Loader2 className="animate-spin" size={20} /> : <Pencil size={20} />}
                         </label>
                         <button 
                           onClick={() => handleDeleteBanner(banner.id, banner.image_url)}
-                          style={{ background: 'none', border: 'none', padding: '8px', color: '#FF3B30', cursor: 'pointer' }}
+                          className="images-banner-delete-btn"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -223,40 +206,35 @@ const Images: React.FC = () => {
                   </motion.div>
                 ))}
                 {banners.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '4rem', color: '#8E8E93' }}>
-                    <ImageIcon size={64} color="#ccc" style={{ marginBottom: '1rem' }} />
+                  <div className="images-empty-state">
+                    <ImageIcon size={64} className="images-empty-icon" color="#ccc" />
                     <p>No banners added yet</p>
                   </div>
                 )}
              </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="images-category-grid">
             {PRODUCT_CATEGORIES.map(cat => (
               <div 
                 key={cat} 
-                className="card" 
-                style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+                className="card images-category-card" 
               >
-                 <div style={{ width: '100%', aspectRatio: '1/1', background: '#F8F8F8', position: 'relative' }}>
+                 <div className="images-category-img-container">
                     {categoryImages[cat] ? (
-                      <img src={categoryImages[cat]} alt={cat} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={categoryImages[cat]} alt={cat} className="images-category-img" />
                     ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="images-category-placeholder">
                         <ImageIcon size={32} color="#ccc" />
                       </div>
                     )}
-                    <label style={{ 
-                      position: 'absolute', bottom: '8px', right: '8px', 
-                      background: 'rgba(0,0,0,0.6)', color: 'white', padding: '8px', 
-                      borderRadius: '50%', cursor: 'pointer', display: 'flex'
-                    }}>
+                    <label className="images-category-upload-btn">
                       <input type="file" accept="image/*" onChange={(e) => handlePickImage(cat, 'category', e)} style={{ display: 'none' }} />
                       {uploading === cat ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
                     </label>
                  </div>
-                 <div style={{ padding: '12px', textAlign: 'center' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#1C1C1E' }}>{cat}</h4>
+                 <div className="images-category-title-container">
+                    <h4 className="images-category-title">{cat}</h4>
                  </div>
               </div>
             ))}

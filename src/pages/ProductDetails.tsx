@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, 
   ArrowLeft, 
-  Save, 
   Store as StoreIcon, 
   Loader2, 
   Barcode as BarcodeIcon, 
@@ -18,6 +17,8 @@ import {
   Edit2,
   CheckCircle2
 } from 'lucide-react';
+
+import './ProductDetails.css';
 
 const PRODUCT_CATEGORIES = [
   'Clothing',
@@ -240,26 +241,16 @@ const ProductDetails: React.FC = () => {
   if (!product) return <div>Product not found</div>;
 
   return (
-    <div className="product-details" style={{ minHeight: '100vh', background: 'white' }}>
-      <header style={{ 
-        position: 'sticky', top: 0, zIndex: 100, background: 'white', 
-        padding: '1rem 1.5rem', borderBottom: '1px solid #F2F2F7',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-      }}>
-        <button onClick={() => navigate('/products')} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: '#8E8E93', cursor: 'pointer', fontWeight: 600 }}>
+    <div className="product-details-page-container">
+      <header className="product-details-header">
+        <button onClick={() => navigate('/products')} className="product-details-back-btn">
           <ArrowLeft size={20} /> Back
         </button>
 
         {product.product_type === 'barcode' && (
           <button 
             onClick={() => setIsEditing(!isEditing)}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '4px',
-              padding: '6px 14px', borderRadius: '20px', fontWeight: 600,
-              background: isEditing ? '#FFF2F2' : '#e7f1ff',
-              color: isEditing ? '#FF3B30' : '#007bff',
-              border: 'none', cursor: 'pointer', fontSize: '14px'
-            }}
+            className={`product-details-edit-btn ${isEditing ? 'active' : ''}`}
           >
             {isEditing ? <XCircle size={18} /> : <Edit2 size={16} />}
             {isEditing ? 'Close' : 'Edit'}
@@ -267,25 +258,20 @@ const ProductDetails: React.FC = () => {
         )}
       </header>
 
-      <main style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
+      <main className="product-details-main">
         {/* Large Image Section */}
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', background: '#F8F8F8', overflow: 'hidden' }}>
+        <div className="product-details-hero-image">
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={product.image_url} alt={product.name} className="product-details-img" />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+            <div className="product-details-img-placeholder">
               <Package size={80} />
-              <p style={{ marginTop: '1rem', fontWeight: 600 }}>No Image Available</p>
+              <p>No Image Available</p>
             </div>
           )}
 
           {product.product_type !== 'personal' && (
-            <label style={{ 
-              position: 'absolute', bottom: '2.5rem', right: '1.25rem', 
-              background: '#007bff', color: 'white', padding: '12px 20px', 
-              borderRadius: '25px', display: 'flex', alignItems: 'center', 
-              gap: '8px', cursor: 'pointer', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}>
+            <label className="product-details-upload-btn">
               <input type="file" accept="image/*" onChange={handlePickImage} style={{ display: 'none' }} disabled={uploading} />
               {uploading ? <Loader2 className="animate-spin" size={20} /> : <Camera size={20} />}
               {product.image_url ? 'Change Photo' : 'Add Photo'}
@@ -294,51 +280,38 @@ const ProductDetails: React.FC = () => {
         </div>
 
         {/* Content Section Overlay */}
-        <div style={{ 
-          background: 'white', marginTop: '-2rem', borderTopLeftRadius: '30px', 
-          borderTopRightRadius: '30px', padding: '1.5rem', position: 'relative'
-        }}>
+        <div className="product-details-content-overlay">
           {!isEditing ? (
             <>
               {/* View Mode */}
               <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#1C1C1E' }}>{product.name}</h1>
-                  <span style={{ 
-                    background: '#F2F2F7', color: '#8E8E93', fontSize: '11px', 
-                    fontWeight: 800, padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' 
-                  }}>{product.category || 'Uncategorized'}</span>
+                <div className="product-details-title-row">
+                  <h1 className="product-details-title">{product.name}</h1>
+                  <span className="product-details-category-badge">{product.category || 'Uncategorized'}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#007bff' }}>₹{product.price}</span>
+                <div className="product-details-price-row">
+                  <span className="product-details-price">₹{product.price}</span>
                   {product.weight_kg !== null && (
-                    <span style={{ fontSize: '18px', color: '#8E8E93', fontWeight: 500, marginLeft: '6px' }}> • {product.weight_kg} kg</span>
+                    <span className="product-details-weight"> • {product.weight_kg} kg</span>
                   )}
-                  <div style={{ 
-                    marginLeft: '12px', padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase',
-                    background: product.product_type === 'barcode' ? '#e7f1ff' : product.product_type === 'common' ? '#FFF4E5' : '#F2F2F7',
-                    color: product.product_type === 'barcode' ? '#007bff' : product.product_type === 'common' ? '#FF9500' : '#666'
-                  }}>
+                  <div className={`product-details-type-badge ${product.product_type}`}>
                     {product.product_type}
                   </div>
                 </div>
               </div>
 
-              <div style={{ height: '1px', background: '#F2F2F7', margin: '1.5rem 0' }} />
+              <div className="product-details-divider" />
 
               <div style={{ marginBottom: '2rem' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '1rem' }}>Description</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 className="product-details-section-title">Description</h3>
+                <div className="product-details-spec-list">
                   {descriptionPairs.filter(p => p.title || p.text).map((pair, idx) => (
-                    <div key={idx} style={{ 
-                      background: '#F8F9FA', padding: '12px', borderRadius: '10px', 
-                      border: '1px solid #F1F3F5', display: 'flex', flexDirection: 'column'
-                    }}>
-                      <span style={{ fontSize: '10px', color: '#8E8E93', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                    <div key={idx} className="product-details-spec-item">
+                      <span className="product-details-spec-title">
                         {pair.title || 'Info'}
                       </span>
-                      <p style={{ fontSize: '15px', color: '#1C1C1E', fontWeight: 600, lineHeight: 1.4 }}>{pair.text}</p>
+                      <p className="product-details-spec-value">{pair.text}</p>
                     </div>
                   ))}
                   {descriptionPairs.length === 0 && <p style={{ color: '#8E8E93' }}>N/A</p>}
@@ -346,20 +319,15 @@ const ProductDetails: React.FC = () => {
               </div>
 
               {/* Store Info Card (Parity Style) */}
-              <div style={{ background: '#F8F8F8', borderRadius: '16px', padding: '16px', border: '1px solid #F2F2F7' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <div className="product-details-store-card">
+                <div className="product-details-store-header">
                   <StoreIcon size={18} color="#8E8E93" />
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Source Store</span>
+                  <span className="product-details-store-label">Source Store</span>
                 </div>
-                <h4 style={{ fontSize: '18px', fontWeight: 800, color: '#1C1C1E', marginBottom: '12px' }}>{product.stores.name}</h4>
+                <h4 className="product-details-store-name">{product.stores.name}</h4>
                 <button 
                   onClick={() => navigate(`/stores/${product.stores.id}`)}
-                  style={{ 
-                    width: '100%', border: 'none', borderTop: '1px solid #E5E5EA', 
-                    paddingTop: '12px', background: 'none', color: '#007bff', 
-                    fontWeight: 700, display: 'flex', alignItems: 'center', 
-                    justifyContent: 'space-between', cursor: 'pointer', fontSize: '14px'
-                  }}
+                  className="product-details-store-link"
                 >
                   View Store Profile
                   <ChevronRight size={16} />
@@ -369,85 +337,77 @@ const ProductDetails: React.FC = () => {
           ) : (
             <>
               {/* Edit Mode */}
-              <div style={{ paddingBottom: '80px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '1.5rem' }}>Edit Product Information</h2>
+              <div className="product-edit-form">
+                <h2 className="product-edit-title">Edit Product Information</h2>
                 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', marginBottom: '6px', marginLeft: '4px', display: 'block' }}>Product Name</label>
+                <div className="product-edit-group">
+                  <label className="product-edit-label">Product Name</label>
                   <input 
                     value={name} 
                     onChange={e => setName(e.target.value)} 
-                    style={{ width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: '12px', padding: '12px', fontSize: '16px' }} 
+                    className="product-edit-input" 
                   />
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ fontSize: '11px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', marginBottom: '6px', marginLeft: '4px', display: 'block' }}>Category</label>
+                <div className="product-edit-group">
+                  <label className="product-edit-label">Category</label>
                   <button 
                     onClick={() => setIsPickerVisible(true)}
-                    style={{ 
-                      width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', 
-                      borderRadius: '12px', padding: '12px', fontSize: '16px', 
-                      textAlign: 'left', display: 'flex', justifyContent: 'space-between', 
-                      alignItems: 'center', cursor: 'pointer' 
-                    }}
+                    className="product-edit-select-btn"
                   >
                     <span style={{ color: category ? '#1C1C1E' : '#999', fontWeight: 600 }}>{category || 'Select Category'}</span>
                     <ChevronRight size={18} color="#007bff" />
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="product-edit-grid">
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', marginBottom: '6px', marginLeft: '4px', display: 'block' }}>Price (₹)</label>
+                    <label className="product-edit-label">Price (₹)</label>
                     <input 
                       type="number" value={price} 
                       onChange={e => setPrice(e.target.value)} 
-                      style={{ width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: '12px', padding: '12px', fontSize: '16px' }} 
+                      className="product-edit-input" 
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: '#8E8E93', textTransform: 'uppercase', marginBottom: '6px', marginLeft: '4px', display: 'block' }}>Weight (kg)</label>
+                    <label className="product-edit-label">Weight (kg)</label>
                     <input 
                       type="number" value={weight} 
                       onChange={e => setWeight(e.target.value)} 
-                      style={{ width: '100%', background: '#F2F2F7', border: '1px solid #E5E5EA', borderRadius: '12px', padding: '12px', fontSize: '16px' }} 
+                      className="product-edit-input" 
                     />
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid #F2F2F7', paddingTop: '1.5rem', marginBottom: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 800 }}>Specifications</h3>
-                    <button onClick={addSpecPair} style={{ background: 'none', border: 'none', color: '#007bff', cursor: 'pointer' }}>
+                <div className="product-edit-specs-section">
+                  <div className="product-edit-specs-header">
+                    <h3 className="product-details-section-title" style={{ marginBottom: 0 }}>Specifications</h3>
+                    <button onClick={addSpecPair} className="product-edit-add-spec-btn">
                       <Plus size={24} />
                     </button>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div className="product-details-spec-list">
                     {descriptionPairs.map((pair, idx) => (
-                      <div key={idx} style={{ 
-                        background: '#FFF', border: '1px solid #F2F2F7', borderRadius: '12px', padding: '12px',
-                        display: 'flex', flexDirection: 'column', gap: '8px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div key={idx} className="product-edit-spec-item">
+                        <div className="product-edit-spec-title-row">
                           <div style={{ flex: 1 }}>
-                            <label style={{ fontSize: '10px', color: '#8E8E93', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Detail Title</label>
+                            <label className="product-edit-label">Detail Title</label>
                             <input 
                               placeholder="e.g. Material" value={pair.title} 
                               onChange={e => updateSpecPair(idx, 'title', e.target.value)} 
-                              style={{ width: '100%', background: 'none', border: 'none', fontWeight: 700, borderBottom: '1px solid #F2F2F7', padding: '4px 0' }} 
+                              className="product-edit-spec-title-input" 
                             />
                           </div>
-                          <button onClick={() => removeSpecPair(idx)} style={{ color: '#FF3B30', background: 'none', border: 'none', marginLeft: '8px' }}>
+                          <button onClick={() => removeSpecPair(idx)} className="product-edit-spec-delete-btn">
                             <Trash2 size={18} />
                           </button>
                         </div>
                         <div>
-                          <label style={{ fontSize: '10px', color: '#8E8E93', fontWeight: 800, textTransform: 'uppercase', marginBottom: '4px', display: 'block' }}>Detail Value</label>
+                          <label className="product-edit-label">Detail Value</label>
                           <textarea 
                             placeholder="Value..." value={pair.text} 
                             onChange={e => updateSpecPair(idx, 'text', e.target.value)} 
-                            style={{ width: '100%', background: 'none', border: 'none', fontSize: '14px', minHeight: '60px', resize: 'none' }} 
+                            className="product-edit-spec-value-textarea" 
                           />
                         </div>
                       </div>
@@ -456,15 +416,11 @@ const ProductDetails: React.FC = () => {
                 </div>
 
                 {/* Bottom Actions Fixed for Mobile Parity */}
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <div className="product-edit-actions">
                   <button 
                     onClick={handleWrongBarcode}
                     disabled={saving}
-                    style={{ 
-                      flex: 1, padding: '14px', borderRadius: '15px', border: '1px solid #FF3B30',
-                      background: 'none', color: '#FF3B30', fontWeight: 700, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer'
-                    }}
+                    className="product-edit-action-btn danger"
                   >
                     <BarcodeIcon size={20} />
                     Wrong Barcode
@@ -472,11 +428,7 @@ const ProductDetails: React.FC = () => {
                   <button 
                     onClick={handleSave}
                     disabled={saving}
-                    style={{ 
-                      flex: 1, padding: '14px', borderRadius: '15px', border: 'none',
-                      background: '#007bff', color: 'white', fontWeight: 700, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer'
-                    }}
+                    className="product-edit-action-btn primary"
                   >
                     {saving ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
                     Save Changes
@@ -495,33 +447,23 @@ const ProductDetails: React.FC = () => {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsPickerVisible(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+              className="product-details-modal-overlay"
             />
             <motion.div 
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              style={{ 
-                position: 'fixed', bottom: 0, left: 0, right: 0, 
-                background: 'white', borderTopLeftRadius: '20px', borderTopRightRadius: '20px',
-                zIndex: 1001, maxHeight: '80vh', display: 'flex', flexDirection: 'column'
-              }}
+              className="product-details-modal-content"
             >
-              <div style={{ padding: '1.25rem', borderBottom: '1px solid #F2F2F7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 800 }}>Select Category</h3>
-                <button onClick={() => setIsPickerVisible(false)} style={{ background: 'none', border: 'none', color: '#1C1C1E' }}><X size={24} /></button>
+              <div className="product-details-modal-header">
+                <h3 className="product-details-modal-title">Select Category</h3>
+                <button onClick={() => setIsPickerVisible(false)} className="product-details-modal-close-btn"><X size={24} /></button>
               </div>
-              <div style={{ overflowY: 'auto', padding: '1rem' }}>
+              <div className="product-details-modal-body">
                 {PRODUCT_CATEGORIES.map(cat => (
                   <button 
                     key={cat}
                     onClick={() => { setCategory(cat); setIsPickerVisible(false); }}
-                    style={{ 
-                      width: '100%', padding: '1rem', textAlign: 'left', background: 'none', 
-                      border: 'none', fontSize: '16px', fontWeight: category === cat ? 700 : 500,
-                      color: category === cat ? '#007bff' : '#1C1C1E', display: 'flex', 
-                      justifyContent: 'space-between', alignItems: 'center', borderRadius: '8px',
-                      marginBottom: '4px'
-                    }}
+                    className={`product-details-modal-list-item ${category === cat ? 'selected' : ''}`}
                   >
                     {cat}
                     {category === cat && <CheckCircle2 size={20} />}
