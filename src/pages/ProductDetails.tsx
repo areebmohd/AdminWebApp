@@ -279,7 +279,7 @@ const ProductDetails: React.FC = () => {
           )}
         </div>
 
-        {/* Content Section Overlay */}
+        {/* Content Section */}
         <div className="product-details-content-overlay">
           {!isEditing ? (
             <>
@@ -318,7 +318,7 @@ const ProductDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* Store Info Card (Parity Style) */}
+              {/* Store Info Card */}
               <div className="product-details-store-card">
                 <div className="product-details-store-header">
                   <StoreIcon size={18} color="#8E8E93" />
