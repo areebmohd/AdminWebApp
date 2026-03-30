@@ -483,20 +483,16 @@ const ProductDetails: React.FC = () => {
                     {descriptionPairs.map((pair, idx) => (
                       <div key={idx} className="product-edit-spec-item">
                         <div className="product-edit-spec-title-row">
-                          <div style={{ flex: 1 }}>
-                            <label className="product-edit-label">Detail Title</label>
-                            <input 
-                              placeholder="e.g. Material" value={pair.title} 
-                              onChange={e => updateSpecPair(idx, 'title', e.target.value)} 
-                              className="product-edit-spec-title-input" 
-                            />
-                          </div>
+                          <input 
+                            placeholder="e.g. Material" value={pair.title} 
+                            onChange={e => updateSpecPair(idx, 'title', e.target.value)} 
+                            className="product-edit-spec-title-input" 
+                          />
                           <button onClick={() => removeSpecPair(idx)} className="product-edit-spec-delete-btn">
                             <Trash2 size={18} />
                           </button>
                         </div>
                         <div>
-                          <label className="product-edit-label">Detail Value</label>
                           <textarea 
                             placeholder="Value..." value={pair.text} 
                             onChange={e => updateSpecPair(idx, 'text', e.target.value)} 
