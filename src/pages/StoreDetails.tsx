@@ -41,6 +41,7 @@ interface Store {
   owner_number: string | null;
   upi_id: string | null;
   location_wkt: string | null;
+  location?: any;
   opening_hours: any;
   approved_details: any;
   verification_images: string[] | null;
@@ -71,6 +72,26 @@ const StoreDetails: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [changedFields, setChangedFields] = useState<{ label: string; old: string; new: string }[]>([]);
 
+  const parseHexEWKB = (hex: string) => {
+    if (!hex || typeof hex !== 'string' || hex.length < 50) return null;
+    try {
+      // PostGIS Hex EWKB for Point: 0101000020E6100000 (9 bytes) + 8 bytes Lon + 8 bytes Lat
+      const lonHex = hex.slice(18, 34);
+      const latHex = hex.slice(34, 50);
+
+      const parseDouble = (h: string) => {
+        const bytes = new Uint8Array(8);
+        for (let i = 0; i < 8; i++) bytes[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+        return new DataView(bytes.buffer).getFloat64(0, true);
+      };
+
+      return `POINT(${parseDouble(lonHex)} ${parseDouble(latHex)})`;
+    } catch (e) {
+      console.error('Error parsing hex location:', e);
+      return null;
+    }
+  };
+
   const fetchStoreDetails = async () => {
     try {
       setLoading(true);
@@ -81,6 +102,12 @@ const StoreDetails: React.FC = () => {
         .single();
 
       if (error) throw error;
+      
+      // Handle geographic location if it's in hex format
+      if (data.location && !data.location_wkt) {
+        data.location_wkt = parseHexEWKB(data.location);
+      }
+
       setStore(data);
 
       const { data: prodData } = await supabase
@@ -430,18 +457,39 @@ const StoreDetails: React.FC = () => {
                 )}
               </div>
 
+              {/* Contact Information Section */}
+              <div className="card store-info-section-card">
+                <h3 className="store-info-section-title">Contact Information</h3>
+                <div className="store-info-row">
+                   <p className="store-info-label">Store Phone</p>
+                   <button 
+                     onClick={() => handleContact('tel', store.phone || '')}
+                     className="store-info-value-link"
+                   >
+                     {store.phone || 'Not provided'}
+                   </button>
+                </div>
+                <div className="store-info-row" style={{ marginBottom: 0 }}>
+                   <p className="store-info-label">WhatsApp Number</p>
+                   <button 
+                     onClick={() => handleContact('whatsapp', store.whatsapp_number || '')}
+                     className="store-info-value-link"
+                   >
+                     {store.whatsapp_number || 'Not provided'}
+                   </button>
+                </div>
+              </div>
+
               {/* Business Info Section */}
               <div className="card store-info-section-card">
                 <h3 className="store-info-section-title">Business Information</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                   <div>
-                     <p className="store-info-label">UPI ID</p>
-                     <p className="store-info-value">{store.upi_id || 'Not provided'}</p>
-                   </div>
-                   <div>
-                     <p className="store-info-label">Email</p>
-                     <p className="store-info-value">{store.email || 'Not provided'}</p>
-                   </div>
+                <div className="store-info-row">
+                   <p className="store-info-label">UPI ID</p>
+                   <p className="store-info-value">{store.upi_id || 'Not provided'}</p>
+                </div>
+                <div className="store-info-row" style={{ marginBottom: 0 }}>
+                   <p className="store-info-label">Email</p>
+                   <p className="store-info-value">{store.email || 'Not provided'}</p>
                 </div>
               </div>
 
