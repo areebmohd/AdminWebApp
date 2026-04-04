@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, 
   ArrowLeft, 
-  Store as StoreIcon, 
   Loader2, 
   Barcode as BarcodeIcon, 
   Camera,
@@ -56,6 +55,7 @@ interface Product {
   raw_image_url: string | null;
   delivery_vehicle: 'bike' | 'truck';
   options: { title: string; values: string[] }[] | null;
+  tags: string[] | null;
 }
 
 interface SpecItem {
@@ -71,6 +71,7 @@ const ProductDetails: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isPickerVisible, setIsPickerVisible] = useState(false);
+  const [globalStoreCount, setGlobalStoreCount] = useState(1);
   
   // Form States
   const [name, setName] = useState('');
@@ -80,6 +81,8 @@ const ProductDetails: React.FC = () => {
   const [deliveryVehicle, setDeliveryVehicle] = useState<'bike' | 'truck'>('bike');
   const [descriptionPairs, setDescriptionPairs] = useState<SpecItem[]>([]);
   const [productOptions, setProductOptions] = useState<{ title: string; values: string[] }[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const fetchProduct = async () => {
@@ -93,6 +96,15 @@ const ProductDetails: React.FC = () => {
 
       if (error) throw error;
       setProduct(data);
+      
+      // Fetch global store count
+      const { count: gCount, error: gError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq(data.barcode ? 'barcode' : 'name', data.barcode || data.name)
+        .neq('is_deleted', true);
+      
+      if (!gError) setGlobalStoreCount(gCount || 1);
       
       // Initialize form
       setName(data.name || '');
@@ -117,6 +129,7 @@ const ProductDetails: React.FC = () => {
       }
       
       setProductOptions(data.options || []);
+      setTags(data.tags || []);
     } catch (error: any) {
       console.error('Error fetching product:', error.message);
     } finally {
@@ -183,6 +196,7 @@ const ProductDetails: React.FC = () => {
         category,
         description: JSON.stringify(validPairs),
         options: productOptions,
+        tags: tags,
         image_url: product.image_url, // Ensure image is synced across all stores
         is_info_complete: isComplete,
         delivery_vehicle: deliveryVehicle,
@@ -355,7 +369,7 @@ const ProductDetails: React.FC = () => {
               <div className="product-details-divider" />
 
               <div style={{ marginBottom: '2rem' }}>
-                <h3 className="product-details-section-title">Description</h3>
+                <h3 className="product-details-section-title">Description & Specs</h3>
                 <div className="product-details-spec-list">
                   {descriptionPairs.filter(p => p.title || p.text).map((pair, idx) => (
                     <div key={idx} className="product-details-spec-item">
@@ -365,7 +379,27 @@ const ProductDetails: React.FC = () => {
                       <p className="product-details-spec-value">{pair.text}</p>
                     </div>
                   ))}
-                  {descriptionPairs.length === 0 && <p style={{ color: '#8E8E93' }}>N/A</p>}
+                  {descriptionPairs.filter(p => p.title || p.text).length === 0 && (
+                    <div className="product-details-spec-item">
+                      <div className="product-details-spec-value" style={{ color: '#8E8E93' }}>No specifications provided</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 className="product-details-section-title">Search Tags</h3>
+                <div className="product-details-spec-list">
+                  <div className="product-details-spec-item">
+                    <span className="product-details-spec-title">Synonyms</span>
+                    <div className="product-details-spec-value">
+                      <div className="product-details-option-values">
+                        {tags.length > 0 ? tags.map((tag, idx) => (
+                          <span key={idx} className="option-value-chip">{tag}</span>
+                        )) : <span style={{ color: '#8E8E93' }}>No tags defined</span>}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -375,30 +409,35 @@ const ProductDetails: React.FC = () => {
                   {productOptions.length > 0 ? productOptions.map((opt, idx) => (
                     <div key={idx} className="product-details-spec-item">
                       <span className="product-details-spec-title">{opt.title}</span>
-                      <div className="product-details-option-values">
-                        {opt.values.map((v, vIdx) => (
-                          <span key={vIdx} className="option-value-chip">{v}</span>
-                        ))}
+                      <div className="product-details-spec-value">
+                        <div className="product-details-option-values">
+                          {opt.values.map((v, vIdx) => (
+                            <span key={vIdx} className="option-value-chip">{v}</span>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  )) : <p style={{ color: '#8E8E93' }}>No variants defined</p>}
+                  )) : <div className="product-details-spec-item"><div className="product-details-spec-value" style={{ color: '#8E8E93' }}>No variants defined</div></div>}
                 </div>
               </div>
 
-              {/* Store Info Card */}
-              <div className="product-details-store-card">
-                <div className="product-details-store-header">
-                  <StoreIcon size={18} color="#8E8E93" />
-                  <span className="product-details-store-label">Source Store</span>
-                </div>
-                <h4 className="product-details-store-name">{product.stores.name}</h4>
-                <button 
-                  onClick={() => navigate(`/stores/${product.stores.id}`)}
-                  className="product-details-store-link"
-                >
-                  View Store Profile
-                  <ChevronRight size={16} />
-                </button>
+              <div className="product-details-divider" />
+
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 className="product-details-section-title">Store</h3>
+                {globalStoreCount > 1 ? (
+                  <p className="product-details-spec-value" style={{ paddingLeft: 0, marginTop: '0.5rem' }}>
+                    Available in {globalStoreCount} Stores
+                  </p>
+                ) : (
+                  <button 
+                    onClick={() => navigate(`/stores/${product.stores.id}`)}
+                    className="product-details-store-link-inline"
+                  >
+                    {product.stores.name}
+                    <ChevronRight size={16} />
+                  </button>
+                )}
               </div>
 
               {product.raw_image_url && (
@@ -527,6 +566,56 @@ const ProductDetails: React.FC = () => {
 
                 <div className="product-edit-specs-section">
                   <div className="product-edit-specs-header">
+                    <h3 className="product-details-section-title" style={{ marginBottom: 0 }}>Tags (Synonyms)</h3>
+                  </div>
+                  <div className="product-edit-group" style={{ marginTop: '1rem' }}>
+                    <div className="tag-input-wrapper" style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        placeholder="Add a tag..." 
+                        value={tagInput}
+                        onChange={e => setTagInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (tagInput.trim()) {
+                              setTags(prev => [...new Set([...prev, tagInput.trim().toLowerCase()])]);
+                              setTagInput('');
+                            }
+                          }
+                        }}
+                        className="product-edit-input" 
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (tagInput.trim()) {
+                            setTags(prev => [...new Set([...prev, tagInput.trim().toLowerCase()])]);
+                            setTagInput('');
+                          }
+                        }}
+                        className="detail-action-btn primary"
+                        style={{ whiteSpace: 'nowrap' }}
+                      >
+                        Add Tag
+                      </button>
+                    </div>
+                    <div className="product-details-option-values" style={{ marginTop: '1rem' }}>
+                      {tags.map((tag, idx) => (
+                        <span key={idx} className="option-value-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {tag}
+                          <X 
+                            size={14} 
+                            style={{ cursor: 'pointer' }} 
+                            onClick={() => setTags(prev => prev.filter((_, i) => i !== idx))} 
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="product-edit-specs-section">
+                  <div className="product-edit-specs-header">
                     <h3 className="product-details-section-title" style={{ marginBottom: 0 }}>Options & Variants</h3>
                     <button 
                       onClick={() => setProductOptions([...productOptions, { title: '', values: [] }])} 
@@ -556,7 +645,7 @@ const ProductDetails: React.FC = () => {
                             <Trash2 size={18} />
                           </button>
                         </div>
-                        <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{ flex: 1, padding: '12px' }}>
                           <input 
                             placeholder="S, M, L, XL (Comma separated)" 
                             value={opt.values.join(', ')} 
@@ -566,6 +655,7 @@ const ProductDetails: React.FC = () => {
                                setProductOptions(newOptions);
                             }} 
                             className="product-edit-input" 
+                            style={{ background: 'white' }}
                           />
                         </div>
                       </div>
