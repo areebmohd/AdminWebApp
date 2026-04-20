@@ -8,6 +8,8 @@ const Products = lazy(() => import('./pages/Products'));
 const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Stores = lazy(() => import('./pages/Stores'));
 const StoreDetails = lazy(() => import('./pages/StoreDetails'));
+const Riders = lazy(() => import('./pages/Riders'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const Images = lazy(() => import('./pages/Images'));
 
 const PageLoader = () => (
@@ -27,6 +29,8 @@ const App: React.FC = () => {
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/stores" element={<Stores />} />
             <Route path="/stores/:id" element={<StoreDetails />} />
+            <Route path="/riders" element={<Riders />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/images" element={<Images />} />
             <Route path="*" element={<Navigate to="/products" replace />} />
           </Routes>

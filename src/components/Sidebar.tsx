@@ -4,7 +4,9 @@ import {
   Package, 
   Store, 
   Image as ImageIcon, 
-  ChevronRight
+  ChevronRight,
+  Bike,
+  Bell
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -13,6 +15,8 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Stores', path: '/stores', icon: Store },
+    { name: 'Riders', path: '/riders', icon: Bike },
+    { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Images', path: '/images', icon: ImageIcon },
   ];
 
@@ -20,7 +24,7 @@ const Sidebar: React.FC = () => {
     <aside className="sidebar">
       <div className="sidebar-branding">
         <h2 className="sidebar-brand-title">
-          DELIVERY<span className="sidebar-brand-text">ADMIN</span>
+          ZORO<span className="sidebar-brand-text">ADMIN</span>
         </h2>
       </div>
 
