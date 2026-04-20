@@ -7,13 +7,15 @@ import {
   ChevronRight,
   Bike,
   Bell,
-  IndianRupee
+  IndianRupee,
+  LayoutDashboard
 } from 'lucide-react';
 
 import './Sidebar.css';
 
 const Sidebar: React.FC = () => {
   const menuItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Stores', path: '/stores', icon: Store },
     { name: 'Riders', path: '/riders', icon: Bike },
