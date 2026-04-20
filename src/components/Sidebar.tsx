@@ -6,7 +6,8 @@ import {
   Image as ImageIcon, 
   ChevronRight,
   Bike,
-  Bell
+  Bell,
+  IndianRupee
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -16,6 +17,7 @@ const Sidebar: React.FC = () => {
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Stores', path: '/stores', icon: Store },
     { name: 'Riders', path: '/riders', icon: Bike },
+    { name: 'Payments', path: '/payments', icon: IndianRupee },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Images', path: '/images', icon: ImageIcon },
   ];
