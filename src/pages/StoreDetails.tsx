@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,45 +21,9 @@ import {
   MessageCircle,
   Map
 } from 'lucide-react';
-
+import { parseHexEWKB } from '../utils/formatters';
+import type { Store, Product } from '../types';
 import './StoreDetails.css';
-
-interface Store {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  banner_url: string | null;
-  is_active: boolean;
-  is_approved: boolean;
-  has_pending_changes: boolean;
-  created_at: string;
-  owner_name: string | null;
-  owner_number: string | null;
-  upi_id: string | null;
-  location_wkt: string | null;
-  location?: any;
-  opening_hours: any;
-  approved_details: any;
-  verification_images: string[] | null;
-  whatsapp_number: string | null;
-  instagram_url: string | null;
-  facebook_url: string | null;
-  address_line_1: string | null;
-  city: string | null;
-  state: string | null;
-  pincode: string | null;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-}
 
 const StoreDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,54 +36,35 @@ const StoreDetails: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [changedFields, setChangedFields] = useState<{ label: string; old: string; new: string }[]>([]);
 
-  const parseHexEWKB = (hex: string) => {
-    if (!hex || typeof hex !== 'string' || hex.length < 50) return null;
-    try {
-      // PostGIS Hex EWKB for Point: 0101000020E6100000 (9 bytes) + 8 bytes Lon + 8 bytes Lat
-      const lonHex = hex.slice(18, 34);
-      const latHex = hex.slice(34, 50);
-
-      const parseDouble = (h: string) => {
-        const bytes = new Uint8Array(8);
-        for (let i = 0; i < 8; i++) bytes[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
-        return new DataView(bytes.buffer).getFloat64(0, true);
-      };
-
-      return `POINT(${parseDouble(lonHex)} ${parseDouble(latHex)})`;
-    } catch (e) {
-      console.error('Error parsing hex location:', e);
-      return null;
-    }
-  };
-
   const fetchStoreDetails = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('stores')
         .select('*')
-        .eq('id', id)
+        .eq('id', id!)
         .single();
 
       if (error) throw error;
       
+      const storeData = data as Store;
       // Handle geographic location if it's in hex format
-      if (data.location && !data.location_wkt) {
-        data.location_wkt = parseHexEWKB(data.location);
+      if (storeData.location && !storeData.location_wkt) {
+        storeData.location_wkt = parseHexEWKB(storeData.location as unknown as string);
       }
 
-      setStore(data);
+      setStore(storeData);
 
       const { data: prodData } = await supabase
         .from('products')
         .select('id, name, price, image_url')
-        .eq('store_id', id)
+        .eq('store_id', id!)
         .eq('in_stock', true)
         .eq('is_deleted', false);
       
-      setProducts(prodData || []);
-    } catch (error: any) {
-      console.error('Error fetching store:', error.message);
+      setProducts((prodData as Product[]) || []);
+    } catch (err: unknown) {
+      alert('Error updating status: ' + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -129,25 +74,30 @@ const StoreDetails: React.FC = () => {
     if (id) fetchStoreDetails();
   }, [id, fetchStoreDetails]);
 
-  const renderFormattedValue = (key: string, value: any) => {
+  const renderFormattedValue = useCallback((key: string, value: string | null | undefined | unknown) => {
     if (!value || value === 'Not set' || value === 'Not provided') return 'Not set';
     if (key === 'opening_hours') {
       try {
         const hours = typeof value === 'string' ? JSON.parse(value) : value;
         if (Array.isArray(hours) && hours.length > 0) {
-          return hours.map((h: any) => `${h.start} - ${h.end}`).join(', ');
+          return hours.map((h: { start: string; end: string }) => `${h.start} - ${h.end}`).join(', ');
         }
       } catch { return String(value); }
     }
     if (key === 'location_wkt' || key === 'location') {
       if (typeof value === 'string') {
-        return value.replace('POINT(', '').replace(')', '').split(' ').reverse().join(', ');
+        const cleanedValue = value.replace('POINT(', '').replace(')', '');
+        const parts = cleanedValue.split(' ');
+        if (parts.length === 2) {
+          return parts.reverse().join(', ');
+        }
+        return cleanedValue;
       }
     }
     return String(value);
-  };
+  }, []);
 
-  const getChanges = () => {
+  const getChanges = useCallback(() => {
     if (!store) return [];
     const fields = [
       { key: 'name', label: 'Store Name' },
@@ -169,28 +119,18 @@ const StoreDetails: React.FC = () => {
     ];
 
     const approved = store.approved_details || {};
-    const diffs: any[] = [];
+    const diffs: { label: string; old: string; new: string }[] = [];
 
     fields.forEach(f => {
-      const oldV = renderFormattedValue(f.key, approved[f.key]);
-      const newV = renderFormattedValue(f.key, (store as any)[f.key]);
+      const oldV = renderFormattedValue(f.key, (approved as Record<string, any>)[f.key]);
+      const newV = renderFormattedValue(f.key, (store as unknown as Record<string, any>)[f.key]);
       if (oldV !== newV) diffs.push({ label: f.label, old: oldV, new: newV });
     });
 
     return diffs;
-  };
+  }, [store, renderFormattedValue]);
 
-  const handleVerifyChanges = () => {
-    const diffs = getChanges();
-    if (diffs.length === 0) {
-      confirmVerification();
-    } else {
-      setChangedFields(diffs);
-      setIsModalOpen(true);
-    }
-  };
-
-  const confirmVerification = async () => {
+  const confirmVerification = useCallback(async () => {
     if (!store) return;
     try {
       setActionLoading(true);
@@ -225,14 +165,24 @@ const StoreDetails: React.FC = () => {
       alert('Changes verified successfully!');
       setIsModalOpen(false);
       fetchStoreDetails();
-    } catch (error: any) {
-      alert(`Action failed: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Action failed: ${(error as Error).message}`);
     } finally {
       setActionLoading(false);
     }
-  };
+  }, [store, fetchStoreDetails]);
 
-  const handleStatusUpdate = async (type: 'activate' | 'deactivate') => {
+  const handleVerifyChanges = useCallback(() => {
+    const diffs = getChanges();
+    if (diffs.length === 0) {
+      confirmVerification();
+    } else {
+      setChangedFields(diffs);
+      setIsModalOpen(true);
+    }
+  }, [getChanges, confirmVerification]);
+
+  const handleStatusUpdate = useCallback(async (type: 'activate' | 'deactivate') => {
     if (!store) return;
     try {
       setActionLoading(true);
@@ -267,30 +217,33 @@ const StoreDetails: React.FC = () => {
       if (error) throw error;
       alert(`Store ${type}d successfully!`);
       fetchStoreDetails();
-    } catch (error: any) {
-      alert(`Action failed: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Action failed: ${(error as Error).message}`);
     } finally {
       setActionLoading(false);
     }
-  };
+  }, [store, fetchStoreDetails]);
 
-  const handleContact = (type: 'tel' | 'whatsapp' | 'url', value: string) => {
+  const handleContact = useCallback((type: 'tel' | 'whatsapp' | 'url', value: string) => {
     if (!value) return;
     let url = '';
     if (type === 'tel') url = `tel:${value}`;
     else if (type === 'whatsapp') url = `https://wa.me/${value.replace(/\D/g, '')}`;
     else url = value.startsWith('http') ? value : `https://${value}`;
     window.open(url, '_blank');
-  };
+  }, []);
 
-  const openInMap = () => {
+  const openInMap = useCallback(() => {
     if (!store?.location_wkt) return;
     const match = store.location_wkt.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
     if (match) {
       const [lng, lat] = [match[1], match[2]];
       window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
     }
-  };
+  }, [store]);
+
+  const openingHoursFormatted = useMemo(() => renderFormattedValue('opening_hours', store?.opening_hours), [store?.opening_hours, renderFormattedValue]);
+  const locationWktFormatted = useMemo(() => renderFormattedValue('location_wkt', store?.location_wkt), [store?.location_wkt, renderFormattedValue]);
 
   if (loading) {
     return (
@@ -300,7 +253,7 @@ const StoreDetails: React.FC = () => {
     );
   }
 
-  if (!store) return <div>Store not found</div>;
+  if (!store) return <div style={{ padding: '2rem', textAlign: 'center' }}>Store not found</div>;
 
   return (
     <div className="detail-page-container">
@@ -323,15 +276,13 @@ const StoreDetails: React.FC = () => {
           )}
 
           {store.is_active ? (
-            <>
-              <button 
-                onClick={() => handleStatusUpdate('deactivate')}
-                disabled={actionLoading}
-                className="detail-action-btn danger"
-              >
-                <XCircle size={16} /> Deactivate
-              </button>
-            </>
+            <button 
+              onClick={() => handleStatusUpdate('deactivate')}
+              disabled={actionLoading}
+              className="detail-action-btn danger"
+            >
+              <XCircle size={16} /> Deactivate
+            </button>
           ) : (
             <button 
               onClick={() => handleStatusUpdate('activate')}
@@ -346,7 +297,6 @@ const StoreDetails: React.FC = () => {
       </header>
 
       <main className="store-details-main">
-        {/* Banner Section */}
         <div className="store-details-banner-container">
           {store.banner_url ? (
             <img src={store.banner_url} alt="Banner" loading="lazy" decoding="async" className="store-details-banner-img" />
@@ -358,7 +308,6 @@ const StoreDetails: React.FC = () => {
           )}
         </div>
 
-        {/* Branding Container */}
         <div className="store-details-branding-container">
            <div className="store-details-branding-top">
               <h2 className="store-details-name">{store.name}</h2>
@@ -385,7 +334,6 @@ const StoreDetails: React.FC = () => {
            </div>
         </div>
 
-        {/* Sticky Tabs */}
         <div className="store-details-tabs-wrapper">
           <div className="store-details-tabs-inner">
             <button 
@@ -403,22 +351,11 @@ const StoreDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="store-details-content-wrapper">
           {activeTab === 'products' ? (
             <div className="store-details-products-grid">
                {products.map(p => (
-                 <motion.div 
-                   key={p.id} 
-                   layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                   className="store-details-product-card"
-                 >
-                   <div className="store-details-product-img-wrapper">
-                      {p.image_url ? <img src={p.image_url} alt={p.name} loading="lazy" decoding="async" /> : <Package size={32} color="#ccc" style={{ margin: 'auto' }} />}
-                   </div>
-                   <h4 className="store-details-product-name">{p.name}</h4>
-                   <p className="store-details-product-price">₹{p.price}</p>
-                 </motion.div>
+                 <ProductCard key={p.id} product={p} />
                ))}
                {products.length === 0 && (
                  <div className="store-details-products-empty">
@@ -429,7 +366,6 @@ const StoreDetails: React.FC = () => {
             </div>
           ) : (
             <div className="store-details-info-layout">
-              {/* Owner Info Section */}
               <div className="card store-info-section-card">
                 <h3 className="store-info-section-title">Owner Information</h3>
                 <div className="store-info-row">
@@ -460,7 +396,6 @@ const StoreDetails: React.FC = () => {
                 )}
               </div>
 
-              {/* Contact Information Section */}
               <div className="card store-info-section-card">
                 <h3 className="store-info-section-title">Contact Information</h3>
                 <div className="store-info-row">
@@ -483,7 +418,6 @@ const StoreDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* Business Info Section */}
               <div className="card store-info-section-card">
                 <h3 className="store-info-section-title">Business Information</h3>
                 <div className="store-info-row">
@@ -496,7 +430,6 @@ const StoreDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* About Section */}
               <div className="card store-info-section-card">
                  <h3 className="store-info-section-title">About the Store</h3>
                  <p style={{ fontSize: '15px', color: '#1C1C1E', lineHeight: 1.5, fontWeight: 500 }}>
@@ -504,14 +437,13 @@ const StoreDetails: React.FC = () => {
                  </p>
               </div>
 
-              {/* Hours & Location Sections */}
               <div className="card" style={{ padding: '0', borderRadius: '20px', overflow: 'hidden' }}>
                  <div style={{ padding: '1rem', borderBottom: '1px solid #F2F2F7' }}>
                     <h3 className="store-info-section-title">Operating Hours</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Clock size={18} color="#007bff" />
                       <p style={{ fontSize: '15px', fontWeight: 600 }}>
-                        {renderFormattedValue('opening_hours', store.opening_hours)}
+                        {openingHoursFormatted}
                       </p>
                     </div>
                  </div>
@@ -520,7 +452,7 @@ const StoreDetails: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                       <Compass size={18} color="#007bff" />
                       <p style={{ fontSize: '15px', fontWeight: 600 }}>
-                        {renderFormattedValue('location_wkt', store.location_wkt)}
+                        {locationWktFormatted}
                       </p>
                     </div>
                     <button 
@@ -533,7 +465,6 @@ const StoreDetails: React.FC = () => {
                  </div>
               </div>
 
-              {/* Address Section */}
               <div className="card store-info-section-card">
                  <h3 className="store-info-section-title">Address</h3>
                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -547,7 +478,6 @@ const StoreDetails: React.FC = () => {
                  </div>
               </div>
 
-              {/* Contact Information (Pill Buttons) */}
               {(store.phone || store.whatsapp_number) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
                    <div style={{ display: 'flex', gap: '1rem' }}>
@@ -579,7 +509,6 @@ const StoreDetails: React.FC = () => {
                 </div>
               )}
 
-              {/* Social Media */}
               {(store.instagram_url || store.facebook_url) && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1.5rem', padding: '1rem 0' }}>
                    {store.instagram_url && (
@@ -599,9 +528,6 @@ const StoreDetails: React.FC = () => {
         </div>
       </main>
 
-
-
-      {/* Verification Changes Modal (Parity) */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="modal-overlay">
@@ -650,4 +576,18 @@ const StoreDetails: React.FC = () => {
   );
 };
 
-export default StoreDetails;
+const ProductCard: React.FC<{ product: Product }> = memo(({ product }) => (
+  <motion.div 
+    layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+    className="store-details-product-card"
+  >
+    <div className="store-details-product-img-wrapper">
+       {product.image_url ? <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" /> : <Package size={32} color="#ccc" style={{ margin: 'auto' }} />}
+    </div>
+    <h4 className="store-details-product-name">{product.name}</h4>
+    <p className="store-details-product-price">₹{product.price}</p>
+  </motion.div>
+));
+
+export default memo(StoreDetails);
+

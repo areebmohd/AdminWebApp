@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
   ShoppingCart, 
@@ -10,20 +10,9 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatCurrency } from '../utils/formatters';
+import type { DashboardStats, Timeframe } from '../types';
 import './Dashboard.css';
-
-interface DashboardStats {
-  total_orders: number;
-  total_deliveries: number;
-  total_payment_received: number;
-  total_to_stores: number;
-  total_to_riders: number;
-  total_to_admin: number;
-  stores_joined: number;
-  products_added: number;
-}
-
-type Timeframe = 'daily' | 'weekly' | 'monthly';
 
 const Dashboard: React.FC = () => {
   const [timeframe, setTimeframe] = useState<Timeframe>('daily');
@@ -31,7 +20,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStats = async (selectedTimeframe: Timeframe) => {
+  const fetchStats = useCallback(async (selectedTimeframe: Timeframe) => {
     try {
       setLoading(true);
       const days = selectedTimeframe === 'daily' ? 1 : selectedTimeframe === 'weekly' ? 7 : 30;
@@ -42,21 +31,17 @@ const Dashboard: React.FC = () => {
 
       if (error) throw error;
       setStats(data as DashboardStats);
-    } catch (err: any) {
-      console.error('Error fetching dashboard stats:', err);
+    } catch (err: unknown) {
+      console.error('Error fetching dashboard stats:', (err as Error).message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchStats(timeframe);
-  }, [timeframe]);
-
-  const formatCurrency = (amount: number) => {
-    return `₹${Math.round(amount).toLocaleString('en-IN')}`;
-  };
+  }, [timeframe, fetchStats]);
 
   if (loading && !refreshing) {
     return (
@@ -162,7 +147,7 @@ interface CardProps {
   color: string;
 }
 
-const StatCard: React.FC<CardProps> = ({ title, value, icon, color }) => (
+const StatCard: React.FC<CardProps> = memo(({ title, value, icon, color }) => (
   <motion.div 
     className="stat-overview-card"
     initial={{ opacity: 0, y: 20 }}
@@ -176,9 +161,9 @@ const StatCard: React.FC<CardProps> = ({ title, value, icon, color }) => (
       <div className="stat-value">{value}</div>
     </div>
   </motion.div>
-);
+));
 
-const BreakdownCard: React.FC<{ label: string; value: string; icon: React.ReactNode; color: string }> = ({ label, value, icon, color }) => (
+const BreakdownCard: React.FC<{ label: string; value: string; icon: React.ReactNode; color: string }> = memo(({ label, value, icon, color }) => (
   <motion.div 
     className="breakdown-card"
     initial={{ opacity: 0, y: 20 }}
@@ -192,6 +177,6 @@ const BreakdownCard: React.FC<{ label: string; value: string; icon: React.ReactN
     </div>
     <div className="breakdown-value" style={{ color }}>{value}</div>
   </motion.div>
-);
+));
 
 export default Dashboard;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,19 +8,9 @@ import {
   Loader2,
 } from 'lucide-react';
 
-import './Stores.css';
 
-interface Store {
-  id: string;
-  name: string;
-  address: string | null;
-  banner_url: string | null;
-  logo_url: string | null;
-  is_active: boolean;
-  is_approved: boolean;
-  has_pending_changes: boolean;
-  created_at: string;
-}
+import type { Store } from '../types';
+import './Stores.css';
 
 interface StoreSection {
   title: string;
@@ -33,7 +23,7 @@ const Stores: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unactive' | 'unverified'>('all');
 
-  const processStores = (stores: Store[], filter: string) => {
+  const processStores = useCallback((stores: Store[], filter: string) => {
     const filtered = stores.filter(store => {
       if (filter === 'unactive') return !store.is_active;
       if (filter === 'unverified') return store.has_pending_changes;
@@ -61,30 +51,34 @@ const Stores: React.FC = () => {
       title: date,
       data: groupedData[date],
     }));
-  };
+  }, []);
+
+  const fetchStores = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const sections = processStores(data as Store[], activeFilter);
+      setStoreSections(sections);
+    } catch (error: unknown) {
+      console.error('Error fetching stores:', (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeFilter, processStores]);
 
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('stores')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const sections = processStores(data as Store[], activeFilter);
-        setStoreSections(sections);
-      } catch (error: any) {
-        console.error('Error fetching stores:', error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStores();
-  }, [activeFilter]);
+  }, [fetchStores]);
+
+  const handleStoreClick = useCallback((id: string) => {
+    navigate(`/stores/${id}`);
+  }, [navigate]);
 
   return (
     <div className="page-container">
@@ -117,57 +111,11 @@ const Stores: React.FC = () => {
         <AnimatePresence mode="wait">
           <div key={activeFilter} className="stores-list-container">
             {storeSections.map((section) => (
-              <div key={section.title}>
-                <h2 className="store-section-title">
-                  {section.title}
-                </h2>
-                
-                <div className="store-grid">
-                  {section.data.map((store) => (
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      key={store.id} 
-                      className="card store-card"
-                      onClick={() => navigate(`/stores/${store.id}`)}
-                    >
-                      {/* Banner Image */}
-                      <div className="store-banner-container">
-                        {store.banner_url ? (
-                          <img src={store.banner_url} alt={store.name} loading="lazy" decoding="async" className="store-banner-img" />
-                        ) : (
-                          <div className="store-banner-placeholder">
-                            <ImageIcon size={40} />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Store Card Body */}
-                      <div className="store-card-body">
-                        <div className="store-info-section">
-                          <h3 className="store-name">{store.name}</h3>
-                          {store.address && (
-                            <p className="store-address">
-                              {store.address}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="store-badges-section">
-                          {store.has_pending_changes && (
-                            <div className="store-badge unverified">
-                              Unverified
-                            </div>
-                          )}
-                          <div className={`store-badge ${store.is_active ? 'active' : 'inactive'}`}>
-                            {store.is_active ? 'Active' : 'Inactive'}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+              <StoreSectionComponent 
+                key={section.title} 
+                section={section} 
+                onStoreClick={handleStoreClick} 
+              />
             ))}
 
             {storeSections.length === 0 && (
@@ -183,4 +131,59 @@ const Stores: React.FC = () => {
   );
 };
 
-export default Stores;
+const StoreSectionComponent: React.FC<{ section: StoreSection; onStoreClick: (id: string) => void }> = memo(({ section, onStoreClick }) => (
+  <div key={section.title}>
+    <h2 className="store-section-title">
+      {section.title}
+    </h2>
+    
+    <div className="store-grid">
+      {section.data.map((store) => (
+        <StoreCard key={store.id} store={store} onClick={onStoreClick} />
+      ))}
+    </div>
+  </div>
+));
+
+const StoreCard: React.FC<{ store: Store; onClick: (id: string) => void }> = memo(({ store, onClick }) => (
+  <motion.div 
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="card store-card"
+    onClick={() => onClick(store.id)}
+  >
+    <div className="store-banner-container">
+      {store.banner_url ? (
+        <img src={store.banner_url} alt={store.name} loading="lazy" decoding="async" className="store-banner-img" />
+      ) : (
+        <div className="store-banner-placeholder">
+          <ImageIcon size={40} />
+        </div>
+      )}
+    </div>
+
+    <div className="store-card-body">
+      <div className="store-info-section">
+        <h3 className="store-name">{store.name}</h3>
+        {store.address && (
+          <p className="store-address">
+            {store.address}
+          </p>
+        )}
+      </div>
+
+      <div className="store-badges-section">
+        {store.has_pending_changes && (
+          <div className="store-badge unverified">
+            Unverified
+          </div>
+        )}
+        <div className={`store-badge ${store.is_active ? 'active' : 'inactive'}`}>
+          {store.is_active ? 'Active' : 'Inactive'}
+        </div>
+      </div>
+    </div>
+  </motion.div>
+));
+
+export default memo(Stores);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
   Send, 
@@ -13,7 +13,16 @@ import {
   Inbox
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatDateFull } from '../utils/formatters';
 import './Notifications.css';
+
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  created_at: string;
+  target_group: string;
+}
 
 const TARGET_GROUPS = [
   { id: 'customer', label: 'Customers', icon: User },
@@ -23,7 +32,7 @@ const TARGET_GROUPS = [
 
 const Notifications: React.FC = () => {
   const [selectedGroup, setSelectedGroup] = useState('customer');
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState('');
@@ -42,7 +51,7 @@ const Notifications: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotifications(data || []);
+      setNotifications((data as Notification[]) || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -54,7 +63,7 @@ const Notifications: React.FC = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const handleSendBroadcast = async (e: React.FormEvent) => {
+  const handleSendBroadcast = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
 
@@ -79,23 +88,24 @@ const Notifications: React.FC = () => {
         setStatus(null);
         fetchNotifications();
       }, 1500);
-    } catch (error: any) {
-      setStatus({ type: 'error', message: error.message || 'Failed to send broadcast' });
+    } catch (error: unknown) {
+      setStatus({ type: 'error', message: (error as Error).message || 'Failed to send broadcast' });
     } finally {
       setSending(false);
     }
-  };
+  }, [selectedGroup, title, description, fetchNotifications]);
 
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  const openModal = useCallback(() => setModalVisible(true), []);
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    setStatus(null);
+  }, []);
 
   return (
     <div className="notifications-container">
       <div className="notifications-header">
         <h1 className="notifications-title">Broadcast Notifications</h1>
-        <button className="create-btn" onClick={() => setModalVisible(true)}>
+        <button className="create-btn" onClick={openModal}>
           <Plus size={20} />
           <span>New Broadcast</span>
         </button>
@@ -127,13 +137,7 @@ const Notifications: React.FC = () => {
       ) : (
         <div className="notifications-list">
           {notifications.map((item) => (
-            <div key={item.id} className="notification-card">
-              <div className="notification-card-header">
-                <h3 className="notification-card-title">{item.title}</h3>
-                <span className="notification-card-time">{formatDate(item.created_at)}</span>
-              </div>
-              <div className="notification-card-body">{item.description}</div>
-            </div>
+            <NotificationCard key={item.id} item={item} />
           ))}
         </div>
       )}
@@ -150,7 +154,7 @@ const Notifications: React.FC = () => {
             >
               <div className="modal-header">
                 <h2 className="modal-title">Push to {selectedGroup}s</h2>
-                <button className="close-btn" onClick={() => setModalVisible(false)}>
+                <button className="close-btn" onClick={closeModal}>
                   <X size={24} />
                 </button>
               </div>
@@ -201,4 +205,14 @@ const Notifications: React.FC = () => {
   );
 };
 
-export default Notifications;
+const NotificationCard: React.FC<{ item: Notification }> = memo(({ item }) => (
+  <div className="notification-card">
+    <div className="notification-card-header">
+      <h3 className="notification-card-title">{item.title}</h3>
+      <span className="notification-card-time">{formatDateFull(item.created_at)}</span>
+    </div>
+    <div className="notification-card-body">{item.description}</div>
+  </div>
+));
+
+export default memo(Notifications);

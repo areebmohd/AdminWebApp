@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
   Bike, 
@@ -12,6 +12,18 @@ import {
 } from 'lucide-react';
 import './Riders.css';
 
+interface RiderProfile {
+  vehicle_type: string | null;
+  vehicle_number: string | null;
+}
+
+interface Address {
+  address_line: string;
+  city: string;
+  pincode: string;
+  is_default: boolean;
+}
+
 interface Rider {
   id: string;
   full_name: string;
@@ -19,19 +31,8 @@ interface Rider {
   phone: string;
   avatar_url: string | null;
   upi_id: string | null;
-  rider_profiles: {
-    vehicle_type: string | null;
-    vehicle_number: string | null;
-  }[] | {
-    vehicle_type: string | null;
-    vehicle_number: string | null;
-  } | null;
-  addresses: {
-    address_line: string;
-    city: string;
-    pincode: string;
-    is_default: boolean;
-  }[] | null;
+  rider_profiles: RiderProfile[] | RiderProfile | null;
+  addresses: Address[] | null;
 }
 
 const Riders: React.FC = () => {
@@ -40,8 +41,9 @@ const Riders: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchRiders = async () => {
+  const fetchRiders = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const { data, error: fetchError } = await supabase
         .from('profiles')
@@ -67,28 +69,31 @@ const Riders: React.FC = () => {
         .order('full_name', { ascending: true });
 
       if (fetchError) throw fetchError;
-      setRiders(data || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch riders');
+      setRiders((data as Rider[]) || []);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to fetch riders');
       console.error('Error fetching riders:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRiders();
+  }, [fetchRiders]);
+
+  const handleCall = useCallback((phone: string) => {
+    window.location.href = `tel:${phone}`;
   }, []);
 
-  const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
-  };
-
-  const filteredRiders = riders.filter(rider => 
-    rider.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rider.phone?.includes(searchTerm) ||
-    rider.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRiders = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return riders.filter(rider => 
+      rider.full_name?.toLowerCase().includes(term) ||
+      rider.phone?.includes(searchTerm) ||
+      rider.email?.toLowerCase().includes(term)
+    );
+  }, [riders, searchTerm]);
 
   if (loading) {
     return (
@@ -140,67 +145,86 @@ const Riders: React.FC = () => {
         </div>
       ) : (
         <div className="riders-grid">
-          {filteredRiders.map((rider) => {
-            const riderProfile = Array.isArray(rider.rider_profiles) 
-              ? rider.rider_profiles[0] 
-              : rider.rider_profiles;
-            
-            const defaultAddress = rider.addresses?.find(a => a.is_default) || rider.addresses?.[0];
-
-            return (
-              <div key={rider.id} className="rider-card">
-                <div className="rider-header">
-                  <div className="rider-avatar">
-                    <User size={30} />
-                  </div>
-                  <div className="rider-info">
-                    <h3>{rider.full_name || 'Unnamed Rider'}</h3>
-                    <div className="rider-phone">{rider.phone || 'No phone'}</div>
-                  </div>
-                </div>
-
-                <div className="rider-divider" />
-
-                <div className="rider-details">
-                  <div className="detail-item">
-                    <Bike size={16} />
-                    <span>{riderProfile?.vehicle_type || 'No vehicle info'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <CreditCard size={16} />
-                    <span>{riderProfile?.vehicle_number || 'N/A'}</span>
-                  </div>
-                </div>
-
-                {defaultAddress && (
-                  <div className="rider-address">
-                    <MapPin size={16} className="address-icon" />
-                    <div className="address-text">
-                      {defaultAddress.address_line}, {defaultAddress.city} - {defaultAddress.pincode}
-                    </div>
-                  </div>
-                )}
-
-                <div className="rider-footer">
-                  <div className="upi-badge" title={rider.upi_id || 'Not provided'}>
-                    <CreditCard size={14} />
-                    <span>{rider.upi_id || 'No UPI ID'}</span>
-                  </div>
-                  <button 
-                    onClick={() => rider.phone && handleCall(rider.phone)}
-                    className="call-btn"
-                    title="Call Rider"
-                  >
-                    <Phone size={18} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {filteredRiders.map((rider) => (
+            <RiderCard key={rider.id} rider={rider} onCall={handleCall} />
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-export default Riders;
+interface RiderCardProps {
+  rider: Rider;
+  onCall: (phone: string) => void;
+}
+
+const RiderCard: React.FC<RiderCardProps> = memo(({ rider, onCall }) => {
+  const riderProfile = Array.isArray(rider.rider_profiles) 
+    ? rider.rider_profiles[0] 
+    : rider.rider_profiles;
+  
+  const defaultAddress = rider.addresses?.find(a => a.is_default) || rider.addresses?.[0];
+
+  return (
+    <div className="rider-card">
+      <div className="rider-header">
+        <div className="rider-avatar">
+          {rider.avatar_url ? (
+            <img 
+              src={rider.avatar_url} 
+              alt={rider.full_name} 
+              loading="lazy" 
+              decoding="async" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} 
+            />
+          ) : (
+            <User size={30} />
+          )}
+        </div>
+        <div className="rider-info">
+          <h3>{rider.full_name || 'Unnamed Rider'}</h3>
+          <div className="rider-phone">{rider.phone || 'No phone'}</div>
+        </div>
+      </div>
+
+      <div className="rider-divider" />
+
+      <div className="rider-details">
+        <div className="detail-item">
+          <Bike size={16} />
+          <span>{riderProfile?.vehicle_type || 'No vehicle info'}</span>
+        </div>
+        <div className="detail-item">
+          <CreditCard size={16} />
+          <span>{riderProfile?.vehicle_number || 'N/A'}</span>
+        </div>
+      </div>
+
+      {defaultAddress && (
+        <div className="rider-address">
+          <MapPin size={16} className="address-icon" />
+          <div className="address-text">
+            {defaultAddress.address_line}, {defaultAddress.city} - {defaultAddress.pincode}
+          </div>
+        </div>
+      )}
+
+      <div className="rider-footer">
+        <div className="upi-badge" title={rider.upi_id || 'Not provided'}>
+          <CreditCard size={14} />
+          <span>{rider.upi_id || 'No UPI ID'}</span>
+        </div>
+        <button 
+          onClick={() => rider.phone && onCall(rider.phone)}
+          className="call-btn"
+          title="Call Rider"
+        >
+          <Phone size={18} />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+export default memo(Riders);

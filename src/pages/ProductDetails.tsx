@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,52 +16,9 @@ import {
   Edit2,
   CheckCircle2
 } from 'lucide-react';
-
+import { PRODUCT_CATEGORIES } from '../constants/productCategories';
+import type { Product, SpecItem } from '../types';
 import './ProductDetails.css';
-
-const PRODUCT_CATEGORIES = [
-  'Grocery',
-  'Clothing',
-  'Electronics',
-  'Food',
-  'Health',
-  'Home',
-  'Kids',
-  'Sports',
-  'Vehicles',
-  'Hardware',
-  'Animals',
-  'Art',
-  'Stationery',
-];
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string;
-  price: number;
-  image_url: string | null;
-  product_type: string;
-  barcode: string | null;
-  weight_kg: number | null;
-  is_info_complete: boolean;
-  needs_changes: boolean;
-  store_id: string;
-  stores: {
-    name: string;
-    id: string;
-  };
-  raw_image_url: string | null;
-  delivery_vehicle: 'bike' | 'truck';
-  options: { title: string; values: string[] }[] | null;
-  tags: string[] | null;
-}
-
-interface SpecItem {
-  title: string;
-  text: string;
-}
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,53 +42,54 @@ const ProductDetails: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
 
-const fetchProduct = useCallback(async () => {
+  const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*, stores(id, name)')
-        .eq('id', id)
+        .eq('id', id!)
         .single();
 
       if (error) throw error;
-      setProduct(data);
+      const productData = data as Product;
+      setProduct(productData);
       
       // Fetch global store count
       const { count: gCount, error: gError } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
-        .eq(data.barcode ? 'barcode' : 'name', data.barcode || data.name)
+        .eq(productData.barcode ? 'barcode' : 'name', productData.barcode || productData.name)
         .neq('is_deleted', true);
       
       if (!gError) setGlobalStoreCount(gCount || 1);
       
       // Initialize form
-      setName(data.name || '');
-      setPrice(data.price?.toString() || '0');
-      setWeight(data.weight_kg?.toString() || '0');
-      setCategory(data.category || '');
-      setDeliveryVehicle(data.delivery_vehicle || 'bike');
+      setName(productData.name || '');
+      setPrice(productData.price?.toString() || '0');
+      setWeight(productData.weight_kg?.toString() || '0');
+      setCategory(productData.category || '');
+      setDeliveryVehicle(productData.delivery_vehicle || 'bike');
       
       try {
-        if (!data.description) {
+        if (!productData.description) {
           setDescriptionPairs([{ title: '', text: '' }]);
         } else {
-          const parsed = JSON.parse(data.description);
+          const parsed = JSON.parse(productData.description);
           if (Array.isArray(parsed)) {
             setDescriptionPairs(parsed.length > 0 ? parsed : [{ title: '', text: '' }]);
           } else {
-            setDescriptionPairs([{ title: 'Description', text: data.description }]);
+            setDescriptionPairs([{ title: 'Description', text: productData.description }]);
           }
         }
       } catch {
-        setDescriptionPairs([{ title: 'Description', text: data.description || '' }]);
+        setDescriptionPairs([{ title: 'Description', text: productData.description || '' }]);
       }
       
-      setProductOptions(data.options || []);
-      setTags(data.tags || []);
-    } catch (error: any) {
-      console.error('Error fetching product:', error.message);
+      setProductOptions(productData.options || []);
+      setTags(productData.tags || []);
+    } catch (error: unknown) {
+      console.error('Error fetching product:', (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -141,7 +99,7 @@ const fetchProduct = useCallback(async () => {
     if (id) fetchProduct();
   }, [id, fetchProduct]);
 
-  const handlePickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePickImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !product) return;
 
@@ -170,14 +128,14 @@ const fetchProduct = useCallback(async () => {
 
       setProduct(prev => prev ? { ...prev, image_url: publicUrl } : null);
       alert('Product image updated');
-    } catch (error: any) {
-      alert(`Upload Error: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Upload Error: ${(error as Error).message}`);
     } finally {
       setUploading(false);
     }
-  };
+  }, [product]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!product) return;
     if (!name || isNaN(parseFloat(price))) {
       alert('Name and valid Price are required.');
@@ -211,7 +169,7 @@ const fetchProduct = useCallback(async () => {
       if (product.product_type === 'barcode' && product.barcode) {
         query = query.eq('barcode', product.barcode);
       } else {
-        query = query.eq('id', id);
+        query = query.eq('id', id!);
       }
 
       const { error } = await query;
@@ -232,14 +190,14 @@ const fetchProduct = useCallback(async () => {
       alert('Product updated successfully!');
       setIsEditing(false);
       fetchProduct();
-    } catch (error: any) {
-      alert(`Save failed: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Save failed: ${(error as Error).message}`);
     } finally {
       setSaving(false);
     }
-  };
+  }, [product, name, price, weight, category, descriptionPairs, productOptions, tags, deliveryVehicle, id, fetchProduct]);
 
-  const handleWrongBarcode = async () => {
+  const handleWrongBarcode = useCallback(async () => {
     if (!product || !window.confirm('Delete this product and notify the store about wrong barcode?')) return;
     
     try {
@@ -272,21 +230,23 @@ const fetchProduct = useCallback(async () => {
       }
       alert('Product removed and store notified.');
       navigate('/products');
-    } catch (error: any) {
-      alert(`Action failed: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Action failed: ${(error as Error).message}`);
     } finally {
       setSaving(false);
     }
-  };
+  }, [product, navigate]);
 
-  const updateSpecPair = (idx: number, field: keyof SpecItem, val: string) => {
-    const newPairs = [...descriptionPairs];
-    newPairs[idx][field] = val;
-    setDescriptionPairs(newPairs);
-  };
+  const updateSpecPair = useCallback((idx: number, field: keyof SpecItem, val: string) => {
+    setDescriptionPairs(prev => {
+      const newPairs = [...prev];
+      newPairs[idx] = { ...newPairs[idx], [field]: val };
+      return newPairs;
+    });
+  }, []);
 
-  const addSpecPair = () => setDescriptionPairs([...descriptionPairs, { title: '', text: '' }]);
-  const removeSpecPair = (idx: number) => setDescriptionPairs(descriptionPairs.filter((_, i) => i !== idx));
+  const addSpecPair = useCallback(() => setDescriptionPairs(prev => [...prev, { title: '', text: '' }]), []);
+  const removeSpecPair = useCallback((idx: number) => setDescriptionPairs(prev => prev.filter((_, i) => i !== idx)), []);
 
   if (loading) {
     return (
@@ -296,7 +256,7 @@ const fetchProduct = useCallback(async () => {
     );
   }
 
-  if (!product) return <div>Product not found</div>;
+  if (!product) return <div style={{ padding: '2rem', textAlign: 'center' }}>Product not found</div>;
 
   return (
     <div className="detail-page-container">
@@ -394,7 +354,7 @@ const fetchProduct = useCallback(async () => {
                     <span className="product-details-spec-title">Synonyms</span>
                     <div className="product-details-spec-value">
                       <div className="product-details-option-values">
-                        {tags.length > 0 ? tags.map((tag, idx) => (
+                        {tags && tags.length > 0 ? tags.map((tag, idx) => (
                           <span key={idx} className="option-value-chip">{tag}</span>
                         )) : <span style={{ color: '#8E8E93' }}>No tags defined</span>}
                       </div>
@@ -406,7 +366,7 @@ const fetchProduct = useCallback(async () => {
               <div style={{ marginBottom: '2rem' }}>
                 <h3 className="product-details-section-title">Product Options (Variants)</h3>
                 <div className="product-details-spec-list">
-                  {productOptions.length > 0 ? productOptions.map((opt, idx) => (
+                  {productOptions && productOptions.length > 0 ? productOptions.map((opt, idx) => (
                     <div key={idx} className="product-details-spec-item">
                       <span className="product-details-spec-title">{opt.title}</span>
                       <div className="product-details-spec-value">
@@ -430,13 +390,15 @@ const fetchProduct = useCallback(async () => {
                     Available in {globalStoreCount} Stores
                   </p>
                 ) : (
-                  <button 
-                    onClick={() => navigate(`/stores/${product.stores.id}`)}
-                    className="product-details-store-link-inline"
-                  >
-                    {product.stores.name}
-                    <ChevronRight size={16} />
-                  </button>
+                  product.stores && (
+                    <button 
+                      onClick={() => navigate(`/stores/${product.stores!.id}`)}
+                      className="product-details-store-link-inline"
+                    >
+                      {product.stores!.name}
+                      <ChevronRight size={16} />
+                    </button>
+                  )
                 )}
               </div>
 
@@ -578,7 +540,7 @@ const fetchProduct = useCallback(async () => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (tagInput.trim()) {
-                              setTags(prev => [...new Set([...prev, tagInput.trim().toLowerCase()])]);
+                              setTags(prev => [...new Set([...(prev || []), tagInput.trim().toLowerCase()])]);
                               setTagInput('');
                             }
                           }
@@ -589,7 +551,7 @@ const fetchProduct = useCallback(async () => {
                         type="button"
                         onClick={() => {
                           if (tagInput.trim()) {
-                            setTags(prev => [...new Set([...prev, tagInput.trim().toLowerCase()])]);
+                            setTags(prev => [...new Set([...(prev || []), tagInput.trim().toLowerCase()])]);
                             setTagInput('');
                           }
                         }}
@@ -600,13 +562,13 @@ const fetchProduct = useCallback(async () => {
                       </button>
                     </div>
                     <div className="product-details-option-values" style={{ marginTop: '1rem' }}>
-                      {tags.map((tag, idx) => (
+                      {tags && tags.map((tag, idx) => (
                         <span key={idx} className="option-value-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           {tag}
                           <X 
                             size={14} 
                             style={{ cursor: 'pointer' }} 
-                            onClick={() => setTags(prev => prev.filter((_, i) => i !== idx))} 
+                            onClick={() => setTags(prev => (prev || []).filter((_, i) => i !== idx))} 
                           />
                         </span>
                       ))}
@@ -618,14 +580,14 @@ const fetchProduct = useCallback(async () => {
                   <div className="product-edit-specs-header">
                     <h3 className="product-details-section-title" style={{ marginBottom: 0 }}>Options & Variants</h3>
                     <button 
-                      onClick={() => setProductOptions([...productOptions, { title: '', values: [] }])} 
+                      onClick={() => setProductOptions([...(productOptions || []), { title: '', values: [] }])} 
                       className="product-edit-add-spec-btn"
                     >
                       <Plus size={24} />
                     </button>
                   </div>
                   <div className="product-details-spec-list">
-                    {productOptions.map((opt, idx) => (
+                    {productOptions && productOptions.map((opt, idx) => (
                       <div key={idx} className="product-edit-spec-item">
                         <div className="product-edit-spec-title-row">
                           <input 
@@ -648,7 +610,7 @@ const fetchProduct = useCallback(async () => {
                         <div style={{ flex: 1, padding: '12px' }}>
                           <input 
                             placeholder="S, M, L, XL (Comma separated)" 
-                            value={opt.values.join(', ')} 
+                            value={(opt.values || []).join(', ')} 
                             onChange={e => {
                                const newOptions = [...productOptions];
                                newOptions[idx].values = e.target.value.split(',').map(v => v.trim()).filter(v => v !== '');
@@ -727,4 +689,4 @@ const fetchProduct = useCallback(async () => {
   );
 };
 
-export default ProductDetails;
+export default memo(ProductDetails);

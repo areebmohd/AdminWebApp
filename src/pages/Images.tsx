@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { motion } from 'framer-motion';
 import { 
@@ -9,24 +9,8 @@ import {
   Camera, 
   Pencil
 } from 'lucide-react';
-
+import { PRODUCT_CATEGORIES } from '../constants/productCategories';
 import './Images.css';
-
-const PRODUCT_CATEGORIES = [
-  'Grocery',
-  'Clothing',
-  'Electronics',
-  'Food',
-  'Health',
-  'Home',
-  'Kids',
-  'Sports',
-  'Vehicles',
-  'Hardware',
-  'Animals',
-  'Art',
-  'Stationery',
-];
 
 interface Banner {
   id: string;
@@ -50,18 +34,18 @@ const Images: React.FC = () => {
           .select('*')
           .order('created_at', { ascending: false });
         if (error) throw error;
-        setBanners(data || []);
+        setBanners((data as Banner[]) || []);
       } else {
         const { data, error } = await supabase.from('category_images').select('*');
         if (error) throw error;
         const mapping: Record<string, string> = {};
-        data?.forEach((item: any) => {
+        (data as { category_name: string; image_url: string }[])?.forEach((item) => {
           mapping[item.category_name] = item.image_url;
         });
         setCategoryImages(mapping);
       }
-    } catch (error: any) {
-      console.error('Fetch error:', error.message);
+    } catch (error: unknown) {
+      console.error('Fetch error:', (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -71,19 +55,21 @@ const Images: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  const handlePickImage = async (id: string, type: 'banner' | 'category', e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePickImage = useCallback(async (id: string, type: 'banner' | 'category', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
       setUploading(id);
       
-      // Delete old image if it exists (Parity Logic)
       let oldUrl = '';
       if (type === 'banner') {
         if (id !== 'new') {
-          const banner = banners.find(b => b.id === id);
-          if (banner) oldUrl = banner.image_url;
+          setBanners(prev => {
+            const banner = prev.find(b => b.id === id);
+            if (banner) oldUrl = banner.image_url;
+            return prev;
+          });
         }
       } else {
         oldUrl = categoryImages[id] || '';
@@ -126,14 +112,14 @@ const Images: React.FC = () => {
 
       alert(`${type.charAt(0).toUpperCase() + type.slice(1)} image updated`);
       fetchData();
-    } catch (error: any) {
-      alert(`Upload Error: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Upload Error: ${(error as Error).message}`);
     } finally {
       setUploading(null);
     }
-  };
+  }, [categoryImages, fetchData]);
 
-  const handleDeleteBanner = async (id: string, imageUrl: string) => {
+  const handleDeleteBanner = useCallback(async (id: string, imageUrl: string) => {
     if (!window.confirm('Are you sure you want to delete this banner?')) return;
     try {
       const { error } = await supabase.from('home_banners').delete().eq('id', id);
@@ -146,10 +132,10 @@ const Images: React.FC = () => {
       
       setBanners(prev => prev.filter(b => b.id !== id));
       alert('Banner deleted');
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Error: ${(error as Error).message}`);
     }
-  };
+  }, []);
 
   return (
     <div className="page-container">
@@ -184,7 +170,6 @@ const Images: React.FC = () => {
           </div>
         ) : activeTab === 'banners' ? (
           <div className="images-banners-list">
-             {/* Add New Banner (Dashed Placeholder) */}
              <label className="images-banner-add-btn">
                 <input type="file" accept="image/*" onChange={(e) => handlePickImage('new', 'banner', e)} style={{ display: 'none' }} />
                 <PlusCircle size={24} /> Add New Banner
@@ -192,26 +177,13 @@ const Images: React.FC = () => {
              
              <div className="images-banner-list-inner">
                 {banners.map(banner => (
-                  <motion.div 
-                    layout key={banner.id} 
-                    className="images-banner-card"
-                  >
-                     <div className="images-banner-img-container">
-                        <img src={banner.image_url} alt="Banner" loading="lazy" decoding="async" className="images-banner-img" />
-                     </div>
-                     <div className="images-banner-actions">
-                        <label className="images-banner-action-btn">
-                          <input type="file" accept="image/*" onChange={(e) => handlePickImage(banner.id, 'banner', e)} style={{ display: 'none' }} />
-                          {uploading === banner.id ? <Loader2 className="animate-spin" size={20} /> : <Pencil size={20} />}
-                        </label>
-                        <button 
-                          onClick={() => handleDeleteBanner(banner.id, banner.image_url)}
-                          className="images-banner-delete-btn"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                     </div>
-                  </motion.div>
+                  <BannerCard 
+                    key={banner.id} 
+                    banner={banner} 
+                    onUpload={handlePickImage} 
+                    onDelete={handleDeleteBanner}
+                    isUploading={uploading === banner.id}
+                  />
                 ))}
                 {banners.length === 0 && (
                   <div className="images-empty-state">
@@ -224,27 +196,13 @@ const Images: React.FC = () => {
         ) : (
           <div className="images-category-grid">
             {PRODUCT_CATEGORIES.map(cat => (
-              <div 
+              <CategoryCard 
                 key={cat} 
-                className="card images-category-card" 
-              >
-                 <div className="images-category-img-container">
-                    {categoryImages[cat] ? (
-                      <img src={categoryImages[cat]} alt={cat} loading="lazy" decoding="async" className="images-category-img" />
-                    ) : (
-                      <div className="images-category-placeholder">
-                        <ImageIcon size={32} color="#ccc" />
-                      </div>
-                    )}
-                    <label className="images-category-upload-btn">
-                      <input type="file" accept="image/*" onChange={(e) => handlePickImage(cat, 'category', e)} style={{ display: 'none' }} />
-                      {uploading === cat ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
-                    </label>
-                 </div>
-                 <div className="images-category-title-container">
-                    <h4 className="images-category-title">{cat}</h4>
-                 </div>
-              </div>
+                category={cat} 
+                imageUrl={categoryImages[cat]} 
+                onUpload={handlePickImage}
+                isUploading={uploading === cat}
+              />
             ))}
           </div>
         )}
@@ -253,4 +211,59 @@ const Images: React.FC = () => {
   );
 };
 
-export default Images;
+interface BannerCardProps {
+  banner: Banner;
+  onUpload: (id: string, type: 'banner' | 'category', e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDelete: (id: string, imageUrl: string) => void;
+  isUploading: boolean;
+}
+
+const BannerCard: React.FC<BannerCardProps> = memo(({ banner, onUpload, onDelete, isUploading }) => (
+  <motion.div layout className="images-banner-card">
+     <div className="images-banner-img-container">
+        <img src={banner.image_url} alt="Banner" loading="lazy" decoding="async" className="images-banner-img" />
+     </div>
+     <div className="images-banner-actions">
+        <label className="images-banner-action-btn">
+          <input type="file" accept="image/*" onChange={(e) => onUpload(banner.id, 'banner', e)} style={{ display: 'none' }} />
+          {isUploading ? <Loader2 className="animate-spin" size={20} /> : <Pencil size={20} />}
+        </label>
+        <button 
+          onClick={() => onDelete(banner.id, banner.image_url)}
+          className="images-banner-delete-btn"
+        >
+          <Trash2 size={20} />
+        </button>
+     </div>
+  </motion.div>
+));
+
+interface CategoryCardProps {
+  category: string;
+  imageUrl?: string;
+  onUpload: (id: string, type: 'banner' | 'category', e: React.ChangeEvent<HTMLInputElement>) => void;
+  isUploading: boolean;
+}
+
+const CategoryCard: React.FC<CategoryCardProps> = memo(({ category, imageUrl, onUpload, isUploading }) => (
+  <div className="card images-category-card">
+     <div className="images-category-img-container">
+        {imageUrl ? (
+          <img src={imageUrl} alt={category} loading="lazy" decoding="async" className="images-category-img" />
+        ) : (
+          <div className="images-category-placeholder">
+            <ImageIcon size={32} color="#ccc" />
+          </div>
+        )}
+        <label className="images-category-upload-btn">
+          <input type="file" accept="image/*" onChange={(e) => onUpload(category, 'category', e)} style={{ display: 'none' }} />
+          {isUploading ? <Loader2 className="animate-spin" size={16} /> : <Camera size={16} />}
+        </label>
+     </div>
+     <div className="images-category-title-container">
+        <h4 className="images-category-title">{category}</h4>
+     </div>
+  </div>
+));
+
+export default memo(Images);

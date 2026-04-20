@@ -10,20 +10,20 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
+import { formatDateShort, getUpiUri, formatCurrency } from '../utils/formatters';
+import type { PayoutType, Payout } from '../types';
 import './Payments.css';
-
-type PayoutType = 'store' | 'rider';
 
 const Payments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<PayoutType>('store');
-  const [payouts, setPayouts] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   
   // QR Modal State
   const [qrModalVisible, setQrModalVisible] = useState(false);
-  const [payingGroup, setPayingGroup] = useState<any | null>(null);
+  const [payingGroup, setPayingGroup] = useState<PayoutGroup | null>(null);
   const [updating, setUpdating] = useState(false);
 
   const fetchPayouts = useCallback(async () => {
@@ -47,7 +47,7 @@ const Payments: React.FC = () => {
       }
 
       const recipientIds = [...new Set(payoutsData.map(p => p.recipient_id))];
-      let enrichedPayouts: any[] = [];
+      let enrichedPayouts: Payout[] = [];
 
       if (activeTab === 'store') {
         const { data: stores } = await supabase
@@ -72,8 +72,8 @@ const Payments: React.FC = () => {
       }
 
       setPayouts(enrichedPayouts);
-    } catch (err: any) {
-      console.error('Error fetching payouts:', err);
+    } catch (err: unknown) {
+      console.error('Error fetching payouts:', (err as Error).message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -84,7 +84,7 @@ const Payments: React.FC = () => {
     fetchPayouts();
   }, [fetchPayouts]);
 
-  const generatePayouts = async () => {
+  const generatePayouts = useCallback(async () => {
     try {
       setIsSyncing(true);
       const { data: orders, error: ordersError } = await supabase
@@ -103,8 +103,15 @@ const Payments: React.FC = () => {
 
       if (ordersError) throw ordersError;
 
-      const newPayouts: any[] = [];
-      const getRiderFee = (order: any) => {
+      const newPayouts: {
+        recipient_id: string;
+        recipient_type: string;
+        order_id: string;
+        amount: number;
+        payment_date: string;
+        status: string;
+      }[] = [];
+      const getRiderFee = (order: { rider_delivery_fee?: number | string; delivery_fee: number | string }) => {
         const rFee = Number(order.rider_delivery_fee ?? 0);
         return rFee > 0 ? rFee : Number(order.delivery_fee ?? 0);
       };
@@ -114,7 +121,7 @@ const Payments: React.FC = () => {
 
         if (order.status === 'delivered' && order.store_id) {
           let storeAmount = 0;
-          order.order_items.forEach((item: any) => {
+          order.order_items.forEach((item: { product_price: number; quantity: number }) => {
             storeAmount += (item.product_price * item.quantity);
           });
 
@@ -154,23 +161,33 @@ const Payments: React.FC = () => {
       }
       
       fetchPayouts();
-    } catch (e: any) {
-        alert('Error: ' + e.message);
+    } catch (e: unknown) {
+        alert('Error: ' + (e as Error).message);
     } finally {
         setIsSyncing(false);
     }
-  };
-
-  const handlePayOnlineClick = (group: any) => {
+  }, [fetchPayouts]);
+  
+  interface PayoutGroup {
+    ids: string[];
+    recipient: any;
+    totalAmount: number;
+    status: string;
+    paymentDate: string;
+    isToday: boolean;
+    upiTransactionId?: string;
+  }
+  
+  const handlePayOnlineClick = useCallback((group: PayoutGroup) => {
     if (!group.recipient?.upi_id) {
       alert('Recipient has not linked a UPI ID.');
       return;
     }
     setPayingGroup(group);
     setQrModalVisible(true);
-  };
+  }, []);
 
-  const confirmPayment = async (method: 'online' | 'cash', groupIds: string[]) => {
+  const confirmPayment = useCallback(async (method: 'online' | 'cash', groupIds: string[]) => {
     const utr = method === 'online' ? 'PAID_ONLINE' : 'PAID_CASH';
     
     if (method === 'cash') {
@@ -191,28 +208,25 @@ const Payments: React.FC = () => {
       setQrModalVisible(false);
       setPayingGroup(null);
       fetchPayouts();
-    } catch (e: any) {
-      alert('Error updating payment: ' + e.message);
+    } catch (e: unknown) {
+      alert('Error updating payment: ' + (e as Error).message);
     } finally {
       setUpdating(false);
     }
-  };
+  }, [fetchPayouts]);
 
-  const handleCloseQrModal = async () => {
+  const handleCloseQrModal = useCallback(async () => {
     if (window.confirm('Was the payment successful?')) {
       if (payingGroup) {
         await confirmPayment('online', payingGroup.ids);
       }
-    } else {
-      setQrModalVisible(false);
-      setPayingGroup(null);
     }
-  };
+  }, [payingGroup, confirmPayment]);
 
   const processedData = useMemo(() => {
     const today = new Date().toLocaleDateString('en-CA');
-    const groups: Record<string, any> = {};
-
+    const groups: Record<string, PayoutGroup> = {};
+ 
     payouts.forEach(p => {
       const key = `${p.recipient_id}_${p.payment_date}`;
       if (!groups[key]) {
@@ -223,11 +237,11 @@ const Payments: React.FC = () => {
           status: p.status,
           paymentDate: p.payment_date,
           isToday: p.payment_date === today,
-          upiTransactionId: p.upi_transaction_id,
+          upiTransactionId: p.upi_transaction_id || undefined,
         };
       }
       groups[key].ids.push(p.id);
-      groups[key].totalAmount += parseFloat(p.amount);
+      groups[key].totalAmount += parseFloat(p.amount as string);
       if (p.upi_transaction_id) groups[key].upiTransactionId = p.upi_transaction_id;
       
       if (p.status !== groups[key].status && p.status === 'pending') {
@@ -240,7 +254,7 @@ const Payments: React.FC = () => {
         canPay: !g.isToday
     }));
 
-    const groupedByDate: Record<string, any[]> = result.reduce((acc: any, curr: any) => {
+    const groupedByDate: Record<string, typeof result> = result.reduce((acc: Record<string, typeof result>, curr) => {
       if (!acc[curr.paymentDate]) acc[curr.paymentDate] = [];
       acc[curr.paymentDate].push(curr);
       return acc;
@@ -256,29 +270,6 @@ const Payments: React.FC = () => {
   }, [payouts]);
 
   const { groupedByDate, sortedDates, dailyTotals } = processedData;
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-IN', { 
-      day: 'numeric', 
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  // Helper to generate UPI URI
-  const getUpiUri = (group: any) => {
-    const recipient = group.recipient;
-    const name = recipient.name || recipient.full_name || 'Recipient';
-    
-    // Format date from YYYY-MM-DD to DD/MM/YYYY
-    const [year, month, day] = group.paymentDate.split('-');
-    const formattedDate = `${day}/${month}/${year}`;
-    const note = `${name} ${formattedDate}`;
-    
-    const amount = group.totalAmount.toFixed(2);
-    
-    return `upi://pay?pa=${recipient.upi_id}&pn=${encodeURIComponent(name)}&tn=${encodeURIComponent(note)}&am=${amount}&cu=INR`;
-  };
 
   return (
     <div className="payments-container">
@@ -325,19 +316,18 @@ const Payments: React.FC = () => {
           {sortedDates.map(date => (
             <div key={date} className="date-group">
               <div className="date-divider">
-                <span className="date-label">{formatDate(date)}</span>
+                <span className="date-label">{formatDateShort(date)}</span>
                 <div className="date-line" />
               </div>
               
               <div className="daily-total-badge">
                 <Coins size={18} />
-                <span>Daily Payout: ₹{dailyTotals[date].toFixed(0)}</span>
+                <span>Daily Payout: {formatCurrency(dailyTotals[date])}</span>
               </div>
 
               <div className="payout-grid">
                 {groupedByDate[date].map((group, idx) => {
                   const isPaid = group.status === 'sent' || group.status === 'paid';
-                  const recipient = group.recipient;
                   
                   return (
                     <motion.div 
@@ -349,10 +339,10 @@ const Payments: React.FC = () => {
                     >
                       <div className="payout-card-top">
                         <div className="recipient-info">
-                          <h3>{recipient.name || recipient.full_name || 'System'}</h3>
-                          <div className="recipient-upi">{recipient.upi_id || 'Upi not linked'}</div>
+                          <h3>{group.recipient?.name || group.recipient?.full_name || 'System'}</h3>
+                          <div className="recipient-upi">{group.recipient?.upi_id || 'Upi not linked'}</div>
                         </div>
-                        <div className="payout-amount">₹{group.totalAmount.toFixed(0)}</div>
+                        <div className="payout-amount">{formatCurrency(group.totalAmount)}</div>
                       </div>
 
                       <div className="payment-status-row">
@@ -427,7 +417,7 @@ const Payments: React.FC = () => {
               <div className="qr-container">
                 <div className="qr-wrapper">
                   <QRCodeSVG 
-                    value={getUpiUri(payingGroup)} 
+                    value={getUpiUri(payingGroup.recipient as any, payingGroup.totalAmount, payingGroup.paymentDate)} 
                     size={220}
                     level="H"
                     includeMargin={true}
@@ -439,7 +429,7 @@ const Payments: React.FC = () => {
                 </p>
 
                 <div className="qr-details">
-                  <div className="qr-amount-large">₹{payingGroup.totalAmount.toFixed(2)}</div>
+                  <div className="qr-amount-large">{formatCurrency(payingGroup.totalAmount)}</div>
                   <div className="qr-detail-row">
                     <span className="qr-detail-label">Recipient</span>
                     <span className="qr-detail-value">{payingGroup.recipient?.name || payingGroup.recipient?.full_name}</span>
@@ -453,8 +443,8 @@ const Payments: React.FC = () => {
                     <span className="qr-detail-value">
                       {payingGroup.recipient?.name || payingGroup.recipient?.full_name} {
                         (() => {
-                          const [y, m, d] = payingGroup.paymentDate.split('-');
-                          return `${d}/${m}/${y}`;
+                          const dateParts = payingGroup.paymentDate.split('-');
+                          return dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : payingGroup.paymentDate;
                         })()
                       }
                     </span>
