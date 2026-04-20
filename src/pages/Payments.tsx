@@ -1,19 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
-  IndianRupee, 
   RotateCw, 
-  Store, 
-  Bike, 
   CheckCircle2, 
-  Calendar, 
-  AlertCircle,
   Loader2,
   Wallet,
   Coins,
-  X,
-  QrCode,
-  ArrowRight
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -27,17 +20,15 @@ const Payments: React.FC = () => {
   const [activeTab, setActiveTab] = useState<PayoutType>('store');
   const [payouts, setPayouts] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
   // QR Modal State
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [payingGroup, setPayingGroup] = useState<any | null>(null);
   const [updating, setUpdating] = useState(false);
 
-  const fetchPayouts = async () => {
+  const fetchPayouts = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
       
       const { data: payoutsData, error: payoutsError } = await supabase
         .from('payouts')
@@ -83,16 +74,15 @@ const Payments: React.FC = () => {
       setPayouts(enrichedPayouts);
     } catch (err: any) {
       console.error('Error fetching payouts:', err);
-      setError(err.message || 'Failed to fetch payouts');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchPayouts();
-  }, [activeTab]);
+  }, [fetchPayouts]);
 
   const generatePayouts = async () => {
     try {

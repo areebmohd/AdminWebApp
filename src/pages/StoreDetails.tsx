@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,7 +92,7 @@ const StoreDetails: React.FC = () => {
     }
   };
 
-  const fetchStoreDetails = async () => {
+  const fetchStoreDetails = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -123,11 +123,11 @@ const StoreDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchStoreDetails();
-  }, [id]);
+    if (id) fetchStoreDetails();
+  }, [id, fetchStoreDetails]);
 
   const renderFormattedValue = (key: string, value: any) => {
     if (!value || value === 'Not set' || value === 'Not provided') return 'Not set';
@@ -137,7 +137,7 @@ const StoreDetails: React.FC = () => {
         if (Array.isArray(hours) && hours.length > 0) {
           return hours.map((h: any) => `${h.start} - ${h.end}`).join(', ');
         }
-      } catch (e) { return String(value); }
+      } catch { return String(value); }
     }
     if (key === 'location_wkt' || key === 'location') {
       if (typeof value === 'string') {

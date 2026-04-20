@@ -8,8 +8,7 @@ import {
   CreditCard, 
   Search, 
   AlertCircle,
-  Loader2,
-  ExternalLink
+  Loader2
 } from 'lucide-react';
 import './Riders.css';
 

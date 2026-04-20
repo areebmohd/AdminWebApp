@@ -37,52 +37,52 @@ const Products: React.FC = () => {
   const [commonFilter, setCommonFilter] = useState<'all' | 'no_image'>('all');
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('products')
-        .select('*, stores(name)')
-        .eq('product_type', activeTab)
-        .eq('is_deleted', false);
-
-      if (activeTab === 'barcode') {
-        if (barcodeFilter === 'uncomplete') {
-          query = query.eq('is_info_complete', false);
-        } else if (barcodeFilter === 'needs_changes') {
-          query = query.eq('needs_changes', true);
-        }
-      } else if (activeTab === 'common') {
-        if (commonFilter === 'no_image') {
-          query = query.or('image_url.is.null,image_url.eq.""');
-        }
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-
-      let finalData = data || [];
-
-      // Deduplicate by barcode for uncomplete barcode products (User Request)
-      if (activeTab === 'barcode' && barcodeFilter === 'uncomplete') {
-        const seenBarcodes = new Set();
-        finalData = finalData.filter(p => {
-          if (!p.barcode) return true;
-          if (seenBarcodes.has(p.barcode)) return false;
-          seenBarcodes.add(p.barcode);
-          return true;
-        });
-      }
-
-      setProducts(finalData);
-    } catch (error: any) {
-      console.error('Error fetching products:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        let query = supabase
+          .from('products')
+          .select('*, stores(name)')
+          .eq('product_type', activeTab)
+          .eq('is_deleted', false);
+
+        if (activeTab === 'barcode') {
+          if (barcodeFilter === 'uncomplete') {
+            query = query.eq('is_info_complete', false);
+          } else if (barcodeFilter === 'needs_changes') {
+            query = query.eq('needs_changes', true);
+          }
+        } else if (activeTab === 'common') {
+          if (commonFilter === 'no_image') {
+            query = query.or('image_url.is.null,image_url.eq.""');
+          }
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        if (error) throw error;
+
+        let finalData = data || [];
+
+        // Deduplicate by barcode for uncomplete barcode products (User Request)
+        if (activeTab === 'barcode' && barcodeFilter === 'uncomplete') {
+          const seenBarcodes = new Set();
+          finalData = finalData.filter(p => {
+            if (!p.barcode) return true;
+            if (seenBarcodes.has(p.barcode)) return false;
+            seenBarcodes.add(p.barcode);
+            return true;
+          });
+        }
+
+        setProducts(finalData);
+      } catch (error: any) {
+        console.error('Error fetching products:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProducts();
   }, [activeTab, barcodeFilter, commonFilter]);
 

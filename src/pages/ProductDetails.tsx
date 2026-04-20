@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,7 +85,7 @@ const ProductDetails: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  const fetchProduct = async () => {
+const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -124,7 +124,7 @@ const ProductDetails: React.FC = () => {
             setDescriptionPairs([{ title: 'Description', text: data.description }]);
           }
         }
-      } catch (e) {
+      } catch {
         setDescriptionPairs([{ title: 'Description', text: data.description || '' }]);
       }
       
@@ -135,11 +135,11 @@ const ProductDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchProduct();
-  }, [id]);
+    if (id) fetchProduct();
+  }, [id, fetchProduct]);
 
   const handlePickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

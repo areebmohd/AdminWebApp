@@ -63,26 +63,26 @@ const Stores: React.FC = () => {
     }));
   };
 
-  const fetchStores = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('stores')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const sections = processStores(data as Store[], activeFilter);
-      setStoreSections(sections);
-    } catch (error: any) {
-      console.error('Error fetching stores:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('stores')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const sections = processStores(data as Store[], activeFilter);
+        setStoreSections(sections);
+      } catch (error: any) {
+        console.error('Error fetching stores:', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchStores();
   }, [activeFilter]);
 

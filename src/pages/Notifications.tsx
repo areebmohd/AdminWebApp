@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { 
-  Bell, 
   Send, 
   User, 
   Store, 
@@ -32,11 +31,7 @@ const Notifications: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [selectedGroup]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -53,7 +48,11 @@ const Notifications: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const handleSendBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();

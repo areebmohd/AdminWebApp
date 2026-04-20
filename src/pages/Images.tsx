@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { motion } from 'framer-motion';
 import { 
@@ -41,7 +41,7 @@ const Images: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       if (activeTab === 'banners') {
@@ -65,11 +65,11 @@ const Images: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchData();
-  }, [activeTab]);
+  }, [fetchData]);
 
   const handlePickImage = async (id: string, type: 'banner' | 'category', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
