@@ -13,6 +13,8 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const Payments = lazy(() => import('./pages/Payments'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Images = lazy(() => import('./pages/Images'));
+import Orders from './pages/Orders';
+import Deliveries from './pages/Deliveries';
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
@@ -35,6 +37,8 @@ const App: React.FC = () => {
             <Route path="/riders" element={<Riders />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/payments" element={<Payments />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/deliveries" element={<Deliveries />} />
             <Route path="/images" element={<Images />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

@@ -8,7 +8,9 @@ import {
   Bike,
   Bell,
   IndianRupee,
-  LayoutDashboard
+  LayoutDashboard,
+  ClipboardList,
+  Truck
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -20,6 +22,8 @@ const Sidebar: React.FC = () => {
     { name: 'Stores', path: '/stores', icon: Store },
     { name: 'Riders', path: '/riders', icon: Bike },
     { name: 'Payments', path: '/payments', icon: IndianRupee },
+    { name: 'Orders', path: '/orders', icon: ClipboardList },
+    { name: 'Deliveries', path: '/deliveries', icon: Truck },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Images', path: '/images', icon: ImageIcon },
   ];

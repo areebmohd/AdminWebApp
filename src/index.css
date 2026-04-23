@@ -476,3 +476,12 @@ h2 {
 .modal-footer .btn {
   flex: 1;
 }
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
