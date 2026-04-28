@@ -10,7 +10,8 @@ import {
   IndianRupee,
   LayoutDashboard,
   ClipboardList,
-  Truck
+  Truck,
+  RotateCcw
 } from 'lucide-react';
 
 import './Sidebar.css';
@@ -24,6 +25,7 @@ const Sidebar: React.FC = () => {
     { name: 'Payments', path: '/payments', icon: IndianRupee },
     { name: 'Orders', path: '/orders', icon: ClipboardList },
     { name: 'Deliveries', path: '/deliveries', icon: Truck },
+    { name: 'Returns', path: '/returns', icon: RotateCcw },
     { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Images', path: '/images', icon: ImageIcon },
   ];

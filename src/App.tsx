@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import Layout from './components/Layout';
+import Orders from './pages/Orders';
+import Deliveries from './pages/Deliveries';
 
 // Lazy-loaded Pages
 const Products = lazy(() => import('./pages/Products'));
@@ -13,8 +15,7 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const Payments = lazy(() => import('./pages/Payments'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Images = lazy(() => import('./pages/Images'));
-import Orders from './pages/Orders';
-import Deliveries from './pages/Deliveries';
+const Returns = lazy(() => import('./pages/Returns'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '60vh' }}>
@@ -39,6 +40,7 @@ const App: React.FC = () => {
             <Route path="/payments" element={<Payments />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/deliveries" element={<Deliveries />} />
+            <Route path="/returns" element={<Returns />} />
             <Route path="/images" element={<Images />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

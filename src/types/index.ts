@@ -90,3 +90,28 @@ export interface Payout {
   };
   order?: { order_number: string };
 }
+
+export interface ReturnRequest {
+  id: string;
+  order_id: string;
+  product_id: string;
+  user_id: string;
+  reason: string;
+  image_url: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'refund_paid' | 'rider_assigned' | 'picked_up_from_customer' | 'dropped_at_store' | 'delivering_exchange' | 'completed';
+  created_at: string;
+  updated_at: string;
+  return_type: string | null;
+  refund_amount?: number;
+  profiles?: {
+    full_name: string;
+    phone: string;
+  };
+  products?: {
+    name: string;
+    image_url: string | null;
+  };
+  orders?: {
+    order_number: string;
+  };
+}
