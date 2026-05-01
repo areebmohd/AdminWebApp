@@ -100,11 +100,11 @@ export interface ReturnRequest {
   user_id: string;
   reason: string;
   image_url: string | null;
-  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'refund_paid' | 'rider_assigned' | 'picked_up_from_customer' | 'dropped_at_store' | 'delivering_exchange' | 'completed';
+  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'rider_assigned' | 'picked_up_from_customer' | 'dropped_at_store' | 'delivering_exchange' | 'completed';
   created_at: string;
   updated_at: string;
   return_type: string | null;
-  refund_amount?: number;
+
   profiles?: {
     full_name: string;
     phone: string;

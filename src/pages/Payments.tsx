@@ -374,12 +374,14 @@ const Payments: React.FC = () => {
                         {!isPaid ? (
                           group.canPay ? (
                             <>
-                              <button 
-                                className="btn-pay-online"
-                                onClick={() => handlePayOnlineClick(group)}
-                              >
-                                Pay Online
-                              </button>
+                              {activeTab === 'store' && (
+                                <button 
+                                  className="btn-pay-online"
+                                  onClick={() => handlePayOnlineClick(group)}
+                                >
+                                  Pay Online
+                                </button>
+                              )}
                               <button 
                                 className="btn-pay-cash"
                                 onClick={() => confirmPayment('cash', group.ids)}

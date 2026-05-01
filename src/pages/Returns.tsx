@@ -9,9 +9,7 @@ import {
   Loader2,
   Phone,
   ClipboardList,
-  XCircle,
-  QrCode,
-  Banknote
+  XCircle
 } from 'lucide-react';
 import type { ReturnRequest } from '../types';
 import './Returns.css';
@@ -25,7 +23,7 @@ const Returns: React.FC = () => {
   const [sections, setSections] = useState<ReturnSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [selectedReturnForQR, setSelectedReturnForQR] = useState<ReturnRequest | null>(null);
+
 
   const groupReturnsByDate = useCallback((returns: ReturnRequest[]) => {
     if (!returns || returns.length === 0) return [];
@@ -154,28 +152,7 @@ const Returns: React.FC = () => {
     }
   };
 
-  const handlePaid = async () => {
-    if (!selectedReturnForQR) return;
-    const id = selectedReturnForQR.id;
-    setProcessingId(id);
-    setSelectedReturnForQR(null);
-    try {
-      const { error } = await supabase
-        .from('returns')
-        .update({ status: 'refund_paid', updated_at: new Date().toISOString() })
-        .eq('id', id);
 
-      if (error) throw error;
-      
-      // Refresh data
-      await fetchReturns();
-    } catch (err) {
-      console.error('Error updating to paid:', err);
-      alert('Failed to update status to paid. Please try again.');
-    } finally {
-      setProcessingId(null);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const statusLower = (status || 'pending').toLowerCase();
@@ -184,8 +161,7 @@ const Returns: React.FC = () => {
         return <span className="status-badge status-pending">Pending</span>;
       case 'approved':
         return <span className="status-badge status-approved">Approved</span>;
-      case 'refund_paid':
-        return <span className="status-badge status-refund_paid">Refund Paid</span>;
+
       case 'rejected':
         return <span className="status-badge status-rejected">Rejected</span>;
       case 'returned':
@@ -238,9 +214,8 @@ const Returns: React.FC = () => {
                         <div className="return-meta">
                           <Clock size={14} />
                           {request.created_at ? new Date(request.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                          <span className="return-type-tag">
-                            {request.return_type?.toLowerCase().includes('exchange') ? 'Exchange' : 'Refund'}
-                          </span>
+                           <span className="return-type-tag">Exchange</span>
+
                         </div>
                       </div>
                       {getStatusBadge(request.status)}
@@ -323,35 +298,10 @@ const Returns: React.FC = () => {
                       </div>
                     )}
                     
-                    {request.status === 'approved' && !request.return_type?.toLowerCase().includes('exchange') && (
-                      <div className="return-actions">
-                        <button 
-                          className="approve-btn"
-                          style={{ backgroundColor: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          onClick={() => setSelectedReturnForQR(request)}
-                          disabled={processingId === request.id}
-                        >
-                          {processingId === request.id ? (
-                            <Loader2 className="animate-spin" size={18} />
-                          ) : (
-                            <QrCode size={18} />
-                          )}
-                          Pay Refund
-                        </button>
-                      </div>
-                    )}
-                    
-                    {request.status === 'approved' && request.return_type?.toLowerCase().includes('exchange') && (
+                    {request.status === 'approved' && (
                       <div className="return-status-message success">
                         <CheckCircle size={16} />
                         Request approved {request.updated_at ? `on ${new Date(request.updated_at).toLocaleDateString()}` : ''}
-                      </div>
-                    )}
-
-                    {request.status === 'refund_paid' && (
-                      <div className="return-status-message success" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
-                        <Banknote size={16} />
-                        Refund Paid {request.updated_at ? `on ${new Date(request.updated_at).toLocaleDateString()}` : ''}
                       </div>
                     )}
                   </div>
@@ -362,56 +312,7 @@ const Returns: React.FC = () => {
         ))
       )}
 
-      {/* QR Code Modal */}
-      {selectedReturnForQR && (() => {
-        const product = Array.isArray(selectedReturnForQR.products) ? selectedReturnForQR.products[0] : selectedReturnForQR.products;
-        const order = Array.isArray(selectedReturnForQR.orders) ? selectedReturnForQR.orders[0] : selectedReturnForQR.orders;
-        const profile = Array.isArray(selectedReturnForQR.profiles) ? selectedReturnForQR.profiles[0] : selectedReturnForQR.profiles;
-        const amount = selectedReturnForQR.refund_amount || 0;
-        
-        const productName = product?.name || 'Product';
-        const orderId = order?.order_number || 'N/A';
-        const userUpiId = profile?.upi_id || 'zorodeliveryapp@upi';
-        const note = encodeURIComponent(`Refund for ${productName} Order ${orderId}`);
-        
-        // Construct standard UPI String using user's UPI ID
-        const upiString = `upi://pay?pa=${encodeURIComponent(userUpiId)}&pn=Zoro+Delivery&am=${amount}&cu=INR&tn=${note}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiString)}`;
 
-        return (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2 className="modal-title">Pay Refund</h2>
-              <p className="modal-subtitle">Scan to refund the amount to the customer.</p>
-              
-              <img 
-                src={qrUrl} 
-                alt="QR Code" 
-                className="qr-code-placeholder"
-              />
-              
-              <div className="modal-amount">
-                ₹{amount}
-              </div>
-
-              <div className="modal-actions">
-                <button 
-                  className="modal-cancel-btn"
-                  onClick={() => setSelectedReturnForQR(null)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="modal-paid-btn"
-                  onClick={handlePaid}
-                >
-                  Paid
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 };
