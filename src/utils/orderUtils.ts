@@ -134,7 +134,7 @@ export const getDisplayPlatformFee = (order: {
   const hasStoreDeliveryOffer = Object.keys(appliedOffers).some(key => key.endsWith('_delivery'));
 
   // Effective delivery fee collected from customer
-  const collectedDeliveryFee = (hasAppOffer || hasStoreDeliveryOffer) ? 0 : customerFee;
+  const collectedDeliveryFee = customerFee;
 
   // Platform revenue from delivery = (Collected + Sponsored) - PaidToRider
   const deliverySurplus = collectedDeliveryFee + sponsoredFee - riderFee;
